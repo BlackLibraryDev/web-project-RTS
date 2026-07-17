@@ -23,8 +23,8 @@ export default class PreloadScene extends Phaser.Scene {
        //this.load.spritesheet('playerSkin', 'assets/player.png', { frameWidth: 128 , frameHeight: 128 });
 
         
-        // 플러그인 로드
-        this.load.plugin('rexvirtualjoystickplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexvirtualjoystickplugin.min.js', true);
+        // 조이스틱 플러그인 로드
+        //this.load.plugin('rexvirtualjoystickplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexvirtualjoystickplugin.min.js', true);
 
         // 로딩 진행 상황을 콘솔이나 텍스트로 확인하고 싶을 때 사용
         this.load.on('progress', (value) => {
