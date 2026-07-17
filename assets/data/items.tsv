@@ -1,0 +1,18 @@
+id	icon	type	subType	price	tags	weight	data
+coin	🪙	payment	bronze	1	#payment	10	count:100;
+apple	🍏	foods	rawfood	100	#food#rawfood#fruit	100	fresh:100;
+beef	🥩	foods	rawfood	200	#food#rawfood#meat	200	fresh:100;
+cake	🍰	foods	cooked	400	#food#cooked	120	fresh:100;
+sword	🗡️	weapon	sword	100	#iron	2200	
+saw	🪚	weapon	tools	80	#iron#wood	1600	
+woodaxe	🪓	weapon	tools	70	#iron#wood#canWood	2400	
+bucket	🪣	fluidContainer	empty	10	#bottle	500	convertID:'bucket';amount:1000;
+bottle	🫙	fluidContainer	empty	10	#bottle	100	convertID:'bottle';amount:100;
+milk	🥛	fluidContainer	milk	40	#bottle	100	convertID:'bottle';amount:100;
+water	🫙	fluidContainer	water	10	#bottle	100	convertID:'bottle';amount:100;
+potion	💊	fluidContainer	potion	100	#bottle	100	convertID:'bottle';amount:100;
+shirt	👕	armor	cloth	20	#cloth	300	
+dress	👗	armor	cloth	100	#cloth	400	
+summerhat	👒	helmet	hat	10	#linen	100	
+wood	🪵	matrial	wood	1	#wood#fire	500	count:10;
+brench	🪾	matrial	wood	1	#wood#fire	200	count10;
