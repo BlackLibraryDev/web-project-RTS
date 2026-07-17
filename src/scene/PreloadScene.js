@@ -20,7 +20,7 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.text('itemTable', 'assets/data/items.tsv');
 
 
-       //this.load.spritesheet('playerSkin', 'assets/player.png', { frameWidth: 128 , frameHeight: 128 });
+       this.load.spritesheet('unit_archer', 'assets/archer.png', { frameWidth: 128 , frameHeight: 128 });
 
         
         // 조이스틱 플러그인 로드
@@ -43,24 +43,23 @@ export default class PreloadScene extends Phaser.Scene {
         // 4. 변환된 전역 DB를 레지스트리에 등록하여 모든 씬에서 사용 가능하게 만듦
         this.registry.set('ITEM_DATABASE', itemDatabase);
 
-
-/*
-        this.anims.create({
-            key: 'idle',
-            frames: this.anims.generateFrameNumbers('tailer', { start: 0, end: 1}),
-            frameRate: 8,
-            repeat: 0
-        });
         this.anims.create({
             key: 'walk',
-            frames: this.anims.generateFrameNumbers('tailer', { start: 1, end: 6 }),
-            frameRate: 8,
-            repeat: -1
+            frames: this.anims.generateFrameNumbers('unit_archer', { start: 0, end: 1 }),
+            frameRate: 10,
+            repeat: -1 // 무한 반복
         });
-*/
+
+        // 서있는 애니메이션 (정지 시 첫 번째 프레임만 사용)
+        this.anims.create({
+            key: 'idle',
+            frames: this.anims.generateFrameNumbers('unit_archer', { start: 0, end: 0 }),
+            frameRate: 1,
+        });
         // 모든 리소스 로드가 완료되면 곧바로 'GameScene'을 시작합니다.
         this.scene.start('GameScene');
     }
+
     // ─── TSV 파싱 유틸리티 함수 ───
     parseTSV(text) {
         const lines = text.split('\n');
