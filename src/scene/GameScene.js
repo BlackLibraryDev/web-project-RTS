@@ -22,23 +22,25 @@ export default class GameScene extends Phaser.Scene {
         // 3. 이동 가능 범위를 보여주는 배경 그래픽 그리기
         this.drawNavigableAreaVisual();
 
-        this.playerSquad = new Squad(this, 200, 400, 'squad_1');
+
+        this.squads = [];
+
+  
+        this.playerSquad = null;
 
         this.cameras.main.setBounds(0, 0, 3000, 600);
-        this.cameras.main.startFollow(this.playerSquad.units[0], true, 0.05, 0.05);
+        if(this.playerSquad && this.playerSquad.units.length > 0) {
+            this.cameras.main.startFollow(this.playerSquad.units[0], true, 0.05, 0.05);
+        }
 
         this.scene.launch('UIScene');
 
         // 명령 수신
-        this.game.events.on('command-squad-move', (data) => {
+        this.game.events.on('command-squad-move', (data, squad) => {
             const worldX = data.x + this.cameras.main.scrollX;
             const worldY = data.y + this.cameras.main.scrollY;
-
-            // [수정] 스쿼드가 선택되었는지 변수를 곧바로 확인합니다.
-            if (this.playerSquad.isSelected) {
-                this.drawIndividualUnitGuides(worldX, worldY);
-                this.playerSquad.moveTo(worldX, worldY);
-            }
+            squad.moveTo(worldX, worldY);
+            
         });
 
         // [키보드 입력 테스트] 스페이스바를 누르면 스쿼드 선택 상태가 토글됩니다.
@@ -61,7 +63,7 @@ export default class GameScene extends Phaser.Scene {
         }
     });
     }
-    /**
+     /**
      * 이동 가능한 범위를 반투명한 다른 색상 그리드로 바닥에 깔아주는 함수
      */
     drawNavigableAreaVisual() {
@@ -86,45 +88,9 @@ export default class GameScene extends Phaser.Scene {
         navGraphics.setDepth(-1);
     }
 
-    /**
-     * 특정 좌표가 이동 가능한 그리드 영역 내부에 있는지 체크하는 헬퍼 함수
-     */
-    isWithinNavigableArea(x, y) {
-        const b = this.navigableBounds;
-        return (x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY);
-    }
-
-    drawIndividualUnitGuides(targetX, targetY) {
-        const fxGraphics = this.add.graphics();
-
-        this.playerSquad.units.forEach(unit => {
-            const finalX = targetX + unit.squadOffsetX;
-            const finalY = targetY + unit.squadOffsetY;
-
-            fxGraphics.lineStyle(1, 0x00aaff, 0.6);
-            fxGraphics.lineBetween(unit.x, unit.y, finalX, finalY);
-
-            fxGraphics.fillStyle(0x00aaff, 0.8);
-            fxGraphics.fillCircle(finalX, finalY, 3);
-        });
-
-        fxGraphics.lineStyle(2, 0xffffff, 0.4);
-        fxGraphics.strokeCircle(targetX, targetY, 15);
-
-        this.tweens.add({
-            targets: fxGraphics,
-            alpha: 0,
-            delay: 1500,
-            duration: 500,
-            onComplete: () => {
-                fxGraphics.destroy();
-            }
-        });
-    }
-
     update() {
-        if (this.playerSquad) {
-            this.playerSquad.update();
-        }
+        this.squads.forEach(squad => {
+            squad.update();
+        });
     }
 }

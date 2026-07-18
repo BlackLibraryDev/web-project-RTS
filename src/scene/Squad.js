@@ -1,19 +1,18 @@
 import Unit from './Unit.js';
 
 export default class Squad {
-    constructor(scene, x, y, unitKey, id, name) {
+    constructor(scene, x, y, unitKey) {
         // Phaser GameObject 상속용 (만약 Group이나 Sprite 등을 상속받은 클래스라면 필요)
         // super(scene, x, y); 
 
         this.scene = scene;
-        this.targetX = x;
-        this.targetY = y;
+        this.targetX = x + Phaser.Math.Between(-10, 10); // 약간의 랜덤 오프셋 추가
+        this.targetY = y + Phaser.Math.Between(-10, 10);
         this.units = [];
         this.unitKey = unitKey;
         
         // [추가] 고유 이름표 부여
-        this.id = id;       
-        this.name = name;   
+        this.id = Math.random().toString(36).substr(2, 9); // 임의의 고유 ID 생성  
         this.isSelected = false;
         
         this.speed = 150;
@@ -32,14 +31,20 @@ export default class Squad {
             const xOffset = Phaser.Math.Between(-10, 10); 
 
             // 변경된 Unit 클래스 생성자에 키 전달
-            const unit = new Unit(scene, x + xOffset, y + yOffset, unitKey);
+            const unit = new Unit(scene, -100+ xOffset, y + yOffset, unitKey);
             
             unit.squadOffsetX = xOffset;
             unit.squadOffsetY = yOffset;
             
             this.units.push(unit);
         }
-        this.selectSquad(true);
+        this.selectSquad(false); // 초기 선택 상태는 false
+
+        //시작하자마자 이동 시작 
+        this.moveTo(x, y);
+
+        this.uiScene = this.scene.scene.get('UIScene');
+        this.uiScene.drawIndividualUnitGuides(this);
     }
 
     // ... selectSquad, moveTo 메서드는 동일 ...
@@ -49,6 +54,7 @@ export default class Squad {
     }
 
     moveTo(targetX, targetY) {
+        
         this.targetX = targetX;
         this.targetY = targetY;
         this.units.forEach((unit, i) => {
@@ -65,7 +71,6 @@ export default class Squad {
             const unitTargetX = this.targetX + unit.squadOffsetX;
             const unitTargetY = this.targetY + unit.squadOffsetY;
             const distance = Phaser.Math.Distance.Between(unit.x, unit.y, unitTargetX, unitTargetY);
-
             if (distance > 5) {
                 const angle = Phaser.Math.Angle.Between(unit.x, unit.y, unitTargetX, unitTargetY);
                 unit.setVelocity(Math.cos(angle) * this.speed, Math.sin(angle) * this.speed);
