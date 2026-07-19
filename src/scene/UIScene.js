@@ -31,22 +31,30 @@ export default class UIScene extends Phaser.Scene {
                 pointer.x < this.totalHudEndX) {
                 return; 
             }
+            const worldBounds = this.registry.get('worldBounds');
+            if( pointer.y > worldBounds.height + worldBounds.minHeight || pointer.y < worldBounds.minHeight) {
+                return; 
+            }
             const squads = this.registry.get('squads') || [];
             squads.forEach(squad => {
                 if (squad.isSelected) {
                     this.game.events.emit('command-squad-move', { x: pointer.x, y: pointer.y }, squad);
                     this.drawIndividualUnitGuides(squad);
+                   // this.deselectAllSquads(); //이동명령 시 모두 선택 해제
                 }
             });
         });
 
         //버튼
-        const button = this.add.text(50, this.hudY, '스쿼드 생산', { font: '20px Arial', fill: '#ffffff', backgroundColor: '#000000' })
-            .setInteractive()
-            .on('pointerdown', () => {
-                const squads = this.registry.get('squads') || [];
-                squads.push(new Squad(this.gameScene, 400, 400, 'unit_archer'));
-                this.registry.set('squads', squads); 
+        const button = this.add.graphics();
+        button.fillStyle(0x00aaff, 1);
+        button.fillRoundedRect(64, this.hudY, 96, 96, 8);
+        
+        button.setInteractive(new Phaser.Geom.Rectangle(64, this.hudY, 96, 96), Phaser.Geom.Rectangle.Contains);
+        button.on('pointerdown', () => {
+            const squads = this.registry.get('squads') || [];
+            squads.push(new Squad(this.gameScene, 400, 400, 'unit_archer'));
+            this.registry.set('squads', squads); 
                 this.gameScene.squads = squads; // GameScene의 squads 배열도 업데이트
                 this.initMultiSquadHUD();
             });
@@ -82,7 +90,15 @@ export default class UIScene extends Phaser.Scene {
             }
         });
     }
-
+    deselectAllSquads() {
+        const squads = this.registry.get('squads') || [];
+        squads.forEach(squad => {
+            if (squad.isSelected) {
+                this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: false });
+                squad.selectSquad(false); // 인게임 부대 선택 상태도 갱신
+            }
+        });
+    }
     /**
      * 여러 개의 스쿼드 데이터를 받아 하단 중앙에 균등 배열 정렬 및 UI 생성
      */
@@ -118,9 +134,11 @@ export default class UIScene extends Phaser.Scene {
             const bgGraphics = this.add.graphics();
             bgGraphics.on('pointerdown', (pointer) => {
                 if(squad.isSelected) {
+                    
                     this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: false });
                     squad.selectSquad(false); // 인게임 부대 선택 상태도 갱신
                 } else {
+                    this.deselectAllSquads();
                     this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: true });
                     squad.selectSquad(true); // 인게임 부대 선택 상태도 갱신
                 }
@@ -257,26 +275,32 @@ export default class UIScene extends Phaser.Scene {
         
         const fxGraphics = this.add.graphics();
 
+        const mainCamera = this.gameScene.cameras.main;
+        // 2. 카메라의 실시간 스크롤 값을 변수에 담습니다.
+        const cameraX = mainCamera.scrollX;
+        const cameraY = mainCamera.scrollY;
+        const zoom = mainCamera.zoom;
 
         squad.units.forEach(unit => {
             const finalX = squad.targetX + unit.squadOffsetX;
             const finalY = squad.targetY + unit.squadOffsetY;
+            
 
             fxGraphics.lineStyle(1, 0x00aaff, 0.6);
-            fxGraphics.lineBetween(unit.x, unit.y, finalX, finalY);
+            fxGraphics.lineBetween(unit.x - cameraX, unit.y - cameraY, finalX - cameraX, finalY - cameraY);
 
             fxGraphics.fillStyle(0x00aaff, 0.8);
-            fxGraphics.fillCircle(finalX, finalY, 3);
+            fxGraphics.fillCircle(finalX - cameraX, finalY - cameraY, 3);
         });
 
         fxGraphics.lineStyle(2, 0xffffff, 0.4);
-        fxGraphics.strokeCircle(squad.targetX, squad.targetY, 15);
+        fxGraphics.strokeCircle(squad.targetX - cameraX, squad.targetY - cameraY, 15);
         this.FxGraphics[squad.id] = fxGraphics;
 
         this.tweens.add({
             targets: fxGraphics,
             alpha: 0,
-            delay: 1500,
+            delay: 1000,
             duration: 500,
             onComplete: () => {
                 fxGraphics.destroy();

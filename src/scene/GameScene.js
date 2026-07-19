@@ -7,16 +7,22 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
         // 1. 전체 맵 월드 크기 정의 (가로 3000px, 세로 600px)
+        const minHeight = 200;
         const worldWidth = 3000;
         const worldHeight = 600;
-        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
-
+        //this.physics.world.setBounds(-100, minHeight, worldWidth, worldHeight);
+        const worldBounds = {
+            width: worldWidth,
+            height: worldHeight,
+            minHeight: minHeight
+        };
+        this.registry.set('worldBounds', worldBounds); // 전역 레지스트리에 저장
         // 2. [핵심] 유닛들이 이동 가능한 Y축 범위 정의 (예: 화면 하단 바닥 레이어 쪽 350px ~ 550px 영역)
         this.navigableBounds = {
             minX: 0,
             maxX: worldWidth,
-            minY: 350,
-            maxY: 550
+            minY: minHeight,
+            maxY: minHeight + worldHeight
         };
 
         // 3. 이동 가능 범위를 보여주는 배경 그래픽 그리기
@@ -29,9 +35,7 @@ export default class GameScene extends Phaser.Scene {
         this.playerSquad = null;
 
         this.cameras.main.setBounds(0, 0, 3000, 600);
-        if(this.playerSquad && this.playerSquad.units.length > 0) {
-            this.cameras.main.startFollow(this.playerSquad.units[0], true, 0.05, 0.05);
-        }
+        
 
         this.scene.launch('UIScene');
 
@@ -54,14 +58,29 @@ export default class GameScene extends Phaser.Scene {
         // 만약 선택 해제한 게 아니라 '새롭게 선택(true)' 한 상황이라면
         if (data.isSelected) {
             // 다른 모든 분대 ID를 순회하며 UI를 강제로 꺼줍니다.
-            this.allSquadList.forEach(squad => {
+            this.squads.forEach(squad => {
                 if (squad.id !== data.id) {
                     this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: false });
                     squad.setIsSelected(false); // 인게임 부대 선택도 해제
                 }
             });
         }
-    });
+        
+        });
+        this.game.events.on('set-squad-selection', (data) => {
+            
+            if(data.isSelected){
+                
+                this.playerSquad = this.squads.find(squad => squad.id === data.id);
+                if(this.playerSquad && this.playerSquad.units.length > 0) {
+                    this.cameras.main.startFollow(this.playerSquad.units[0], true, 0.05, 0.05);
+                }
+            }else{
+                if(this.playerSquad && this.playerSquad.id === data.id){
+                    this.playerSquad = null;
+                }
+            }
+        });
     }
      /**
      * 이동 가능한 범위를 반투명한 다른 색상 그리드로 바닥에 깔아주는 함수

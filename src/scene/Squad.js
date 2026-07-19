@@ -31,7 +31,7 @@ export default class Squad {
             const xOffset = Phaser.Math.Between(-10, 10); 
 
             // 변경된 Unit 클래스 생성자에 키 전달
-            const unit = new Unit(scene, -100+ xOffset, y + yOffset, unitKey);
+            const unit = new Unit(scene, -200 + xOffset, y + yOffset, unitKey);
             
             unit.squadOffsetX = xOffset;
             unit.squadOffsetY = yOffset;

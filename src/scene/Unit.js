@@ -46,7 +46,7 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
     updateRing() {
         if (!this.isSelected) return;
         this.selectionRing.clear();
-        this.selectionRing.lineStyle(2, 0x33ff33, 0.7);
+        this.selectionRing.lineStyle(2, 0x00aaff , 0.7);
 
         // [수정] 기준점이 (0.5, 1)이므로, 유닛의 현재 Y 좌표가 곧 발밑입니다.
         // 약간의 여유(offset)만 줍니다.
