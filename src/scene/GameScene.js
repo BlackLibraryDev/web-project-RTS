@@ -8,9 +8,9 @@ export default class GameScene extends Phaser.Scene {
     create() {
         // 1. 전체 맵 월드 크기 정의 (가로 3000px, 세로 600px)
         const minHeight = 200;
-        const worldWidth = 3000;
+        const worldWidth = 5000;
         const worldHeight = 600;
-        //this.physics.world.setBounds(-100, minHeight, worldWidth, worldHeight);
+        this.physics.world.setBounds(-100, minHeight-100, worldWidth+100, worldHeight+100);
         const worldBounds = {
             width: worldWidth,
             height: worldHeight,
@@ -28,7 +28,21 @@ export default class GameScene extends Phaser.Scene {
         // 3. 이동 가능 범위를 보여주는 배경 그래픽 그리기
         this.drawNavigableAreaVisual();
 
+        // 1. 장애물 그룹 생성 및 샘플 장애물 배치
+        this.obstacles = this.physics.add.staticGroup();
+        
+        // 예시로 500, 400 위치에 'sandbag'(모래주머니) 이미지로 장애물 배치 가정
+        // (PreloadScene에서 'sandbag' 이미지를 로드했다고 가정합니다)
+        const sandbag = this.obstacles.create(500, 420, 'sandbag'); 
+        sandbag.coverPattern = [
+            { x: -45, y: 20 },
+            { x: -15, y: 20 },
+            { x: 15, y: 20 },
+            { x: 45, y: 20 }
+        ];
+        sandbag.setInteractive(); // 클릭 가능하도록 설정
 
+        //모든 스쿼드 담기
         this.squads = [];
 
   
@@ -38,12 +52,57 @@ export default class GameScene extends Phaser.Scene {
         
 
         this.scene.launch('UIScene');
+        this.UIScene = this.scene.get('UIScene');
 
-        // 명령 수신
+        // ==========================================
+        // 4. 글로벌 멀티 스쿼드 이벤트 리스너
+        // ==========================================
+        this.game.events.on('command-squad-action', (data) => {
+            //UIScene에서 버튼 클릭 시 전달받은 명령어를 처리
+            
+             this.squads.forEach(squad => {
+                if (squad.isSelected) {
+                    //선택된 스쿼드의 경우에만
+                    console.log(`명령어 수신: ${data.command}`);    
+                    switch (data.command) {
+                        case 'STOP':
+                            squad.stop();
+                            break;
+                        case 'HOLD':
+                            squad.holdPosition();
+                            break;
+                        case 'ATTACK':
+                            squad.attackMove();
+                            break;
+                        case 'Reinforce':
+                            squad.reinforceSquad(squad.unitKey);
+                            break;
+                        case 'Retreat':
+                            squad.retreat();
+                            break;
+                        default:
+                            console.warn(`알 수 없는 명령어: ${data.command}`);
+                    }
+                }
+            });
+
+        });
         this.game.events.on('command-squad-move', (data, squad) => {
             const worldX = data.x + this.cameras.main.scrollX;
             const worldY = data.y + this.cameras.main.scrollY;
-            squad.moveTo(worldX, worldY);
+
+            // 3. 에러가 났던 함수를 호출합니다!
+            const clickedObstacle = this.checkObstacleAt(worldX, worldY);
+
+            if (clickedObstacle) {
+                // 모래주머니 뒤에 일렬로 옹기종기 숨는 상대 좌표(오프셋)
+                console.log(clickedObstacle.coverPattern);
+                squad.moveTo(clickedObstacle.x, clickedObstacle.y, clickedObstacle.coverPattern);
+            } else {
+                squad.moveTo(worldX, worldY);
+            }
+
+            this.drawIndividualUnitGuides(squad)
             
         });
 
@@ -82,6 +141,26 @@ export default class GameScene extends Phaser.Scene {
             }
         });
     }
+
+    // 2. 에러를 뿜었던 함수 구현부
+    checkObstacleAt(worldX, worldY) {
+        let foundObstacle = null;
+
+        // 장애물 그룹을 순회하면서 클릭한 좌표(worldX, worldY)가 장애물 범위 안에 있는지 체크
+        this.obstacles.getChildren().forEach(obstacle => {
+            // 장애물의 사각형 영역 획득
+            const bounds = obstacle.getBounds();
+            
+            // 클릭한 위치가 장애물 내부인지 확인
+            if (bounds.contains(worldX, worldY)) {
+                foundObstacle = obstacle;
+            }
+        });
+
+        return foundObstacle; // 찾으면 장애물 객체 반환, 없으면 null 반환
+    }
+
+
      /**
      * 이동 가능한 범위를 반투명한 다른 색상 그리드로 바닥에 깔아주는 함수
      */
@@ -105,6 +184,46 @@ export default class GameScene extends Phaser.Scene {
         
         // 유닛들 뒤쪽 배경으로 들어가도록 depth를 낮게 설정 (-1)
         navGraphics.setDepth(-1);
+    }
+
+    //도착점 좌표 선
+    drawIndividualUnitGuides(squad) {
+        //나중에 적팀의 경우 보여지지 않게 return 처리 
+        if(this.FxGraphics === undefined) {
+            this.FxGraphics = {};
+        }
+        if( this.FxGraphics[squad.id]) {
+            this.FxGraphics[squad.id].clear();
+            this.FxGraphics[squad.id].destroy();
+        }
+        
+        const fxGraphics = this.add.graphics();
+
+        squad.units.forEach(unit => {
+            const finalX = squad.targetX + unit.squadOffsetX;
+            const finalY = squad.targetY + unit.squadOffsetY;
+            
+
+            fxGraphics.lineStyle(1, 0x00aaff, 0.6);
+            fxGraphics.lineBetween(unit.x , unit.y , finalX , finalY );
+
+            fxGraphics.fillStyle(0x00aaff, 0.8);
+            fxGraphics.fillCircle(finalX , finalY , 3);
+        });
+
+        fxGraphics.lineStyle(2, 0xffffff, 0.4);
+        //fxGraphics.strokeCircle(squad.targetX , squad.targetY , 15); //터치 원 좌표
+        this.FxGraphics[squad.id] = fxGraphics;
+
+        this.tweens.add({
+            targets: fxGraphics,
+            alpha: 0,
+            delay: 1000,
+            duration: 500,
+            onComplete: () => {
+                fxGraphics.destroy();
+            }
+        });
     }
 
     update() {

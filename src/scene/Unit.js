@@ -14,8 +14,18 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         this.isSelected = false;
         this.selectionRing = scene.add.graphics();
         
+        const idleKey = `${texture}_idle`;
+        const walkKey = `${texture}_walk`;
         // 초기 애니메이션 설정
-        this.anims.play('idle');
+        if (scene.anims.exists(idleKey)) {
+            this.anims.play(idleKey);
+        } else {
+            // 혹시라도 개별 애니메이션을 못 찾았을 때 팅기지 않도록 기본 'idle' 백업 처리
+            console.warn(`애니메이션을 찾을 수 없습니다: ${idleKey}. 기본 idle을 재생합니다.`);
+            if (scene.anims.exists('idle')) {
+                this.anims.play('idle');
+            }
+        }
     }
 
     setSelected(isSelected) {
@@ -27,18 +37,29 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
 
     // --- [핵심 2] 이동 상태에 따른 애니메이션 제어 함수 ---
     updateAnimation() {
-        // 물리 엔진의 현재 속도를 확인하여 이동 중인지 판단
+        // 1. 물리 엔진의 현재 속도를 확인하여 이동 중인지 판단
         const speed = this.body.speed;
         
-        // 약간의 오차를 두고 속도가 0보다 크면 걷기, 아니면 idle
+        // 2. 현재 내 유닛의 고유 텍스처 키를 가져와 동적 애니메이션 키 이름 생성
+        // 예: 'unit_archer' -> 'unit_archer_walk' / 'unit_archer_idle'
+        const walkKey = `${this.texture.key}_walk`;
+        const idleKey = `${this.texture.key}_idle`;
+        
+        // 3. 약간의 오차를 두고 속도가 5보다 크면 걷기, 아니면 idle
         if (speed > 5) {
-            // 이미 'walk' 애니메이션이 재생 중인지 확인 후 중복 재생 방지
-            if (this.anims.currentAnim?.key !== 'walk') {
-                this.anims.play('walk', true);
+            // 현재 재생 중인 애니메이션 키가 내 유닛의 walkKey와 다를 때만 새롭게 재생합니다 (중복 재생 방지)
+            if (this.anims.currentAnim?.key !== walkKey) {
+                // scene.anims.exists로 애니메이션이 등록되어 있는지 안전 검사 후 실행하면 더 좋습니다.
+                if (this.scene.anims.exists(walkKey)) {
+                    this.anims.play(walkKey, true);
+                }
             }
         } else {
-            if (this.anims.currentAnim?.key !== 'idle') {
-                this.anims.play('idle', true);
+            // 현재 재생 중인 애니메이션 키가 내 유닛의 idleKey와 다를 때만 재생
+            if (this.anims.currentAnim?.key !== idleKey) {
+                if (this.scene.anims.exists(idleKey)) {
+                    this.anims.play(idleKey, true);
+                }
             }
         }
     }

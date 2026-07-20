@@ -21,8 +21,9 @@ export default class PreloadScene extends Phaser.Scene {
 
 
        this.load.spritesheet('unit_archer', 'assets/archer.png', { frameWidth: 128 , frameHeight: 128 });
+        this.load.spritesheet('unit_rifleman', 'assets/rifleman.png', { frameWidth: 128 , frameHeight: 128 });
+        this.load.spritesheet('unit_sniper', 'assets/sniper.png', { frameWidth: 128 , frameHeight: 128 });
 
-        
         // 조이스틱 플러그인 로드
         //this.load.plugin('rexvirtualjoystickplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexvirtualjoystickplugin.min.js', true);
 
@@ -44,7 +45,7 @@ export default class PreloadScene extends Phaser.Scene {
         this.registry.set('ITEM_DATABASE', itemDatabase);
 
         this.anims.create({
-            key: 'walk',
+            key: 'unit_archer_walk',
             frames: this.anims.generateFrameNumbers('unit_archer', { start: 0, end: 1 }),
             frameRate: 10,
             repeat: -1 // 무한 반복
@@ -52,8 +53,34 @@ export default class PreloadScene extends Phaser.Scene {
 
         // 서있는 애니메이션 (정지 시 첫 번째 프레임만 사용)
         this.anims.create({
-            key: 'idle',
+            key: 'unit_archer_idle',
             frames: this.anims.generateFrameNumbers('unit_archer', { start: 0, end: 0 }),
+            frameRate: 1,
+        });
+
+        this.anims.create({
+            key: 'unit_rifleman_walk',
+            frames: this.anims.generateFrameNumbers('unit_rifleman', { start: 0, end: 1 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'unit_rifleman_idle',
+            frames: this.anims.generateFrameNumbers('unit_rifleman', { start: 0, end: 0 }),
+            frameRate: 1,
+        });
+
+        this.anims.create({
+            key: 'unit_sniper_walk',
+            frames: this.anims.generateFrameNumbers('unit_sniper', { start: 0, end: 1 }),
+            frameRate: 10,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'unit_sniper_idle',
+            frames: this.anims.generateFrameNumbers('unit_sniper', { start: 0, end: 0 }),
             frameRate: 1,
         });
         // 모든 리소스 로드가 완료되면 곧바로 'GameScene'을 시작합니다.

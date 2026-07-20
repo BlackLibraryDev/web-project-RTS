@@ -8,7 +8,6 @@ export default class UIScene extends Phaser.Scene {
     create() {
         const width = this.scale.width;   
         const height = this.scale.height; 
-        this.FxGraphics = {}; // 각 스쿼드별로 개별 그래픽을 저장할 객체
 
         // 각 스쿼드 HUD 카드의 개별 규격
         this.cardWidth = 94;        
@@ -39,26 +38,25 @@ export default class UIScene extends Phaser.Scene {
             squads.forEach(squad => {
                 if (squad.isSelected) {
                     this.game.events.emit('command-squad-move', { x: pointer.x, y: pointer.y }, squad);
-                    this.drawIndividualUnitGuides(squad);
+                    //this.drawIndividualUnitGuides(squad);
                    // this.deselectAllSquads(); //이동명령 시 모두 선택 해제
                 }
             });
         });
 
         //버튼
-        const button = this.add.graphics();
-        button.fillStyle(0x00aaff, 1);
-        button.fillRoundedRect(64, this.hudY, 96, 96, 8);
-        
-        button.setInteractive(new Phaser.Geom.Rectangle(64, this.hudY, 96, 96), Phaser.Geom.Rectangle.Contains);
-        button.on('pointerdown', () => {
-            const squads = this.registry.get('squads') || [];
-            squads.push(new Squad(this.gameScene, 400, 400, 'unit_archer'));
-            this.registry.set('squads', squads); 
-                this.gameScene.squads = squads; // GameScene의 squads 배열도 업데이트
-                this.initMultiSquadHUD();
-            });
+        // 0번째 칸에 아처 생산 버튼
+        this.createSpawnButton(0, 'unit_archer', 'Archer');
+        this.createSpawnButton(1, 'unit_rifleman', 'Rifleman');
+        this.createSpawnButton(2, 'unit_sniper', 'Sniper');
 
+        // [우측 하단] 명령어 버튼들 (0번부터 왼쪽으로 배치)
+        // index 0: 맨 우측 끝 버튼
+        this.createCommandButton(0, 'Retreat', 0x992222, '‼');   // 정지 (붉은빛)
+        this.createCommandButton(1, 'Reinforce', 0x222299, '✚');   // 위치 사수 (푸른빛)
+        //this.createCommandButton(2, 'ATTACK', 0x229922, '⚔'); // 공격 이동 (초록빛)
+        //this.createCommandButton(3, 'Reinforce', 0x22eeff, '✚'); // 충원
+        
 
         // ==========================================
         // 4. 글로벌 멀티 스쿼드 이벤트 리스너
@@ -90,6 +88,130 @@ export default class UIScene extends Phaser.Scene {
             }
         });
     }
+
+    /**
+     * 우측 하단에 분대 제어용 명령어 버튼을 생성하는 함수
+     * @param {number} index - 우측 끝에서부터의 순번 (0: 맨 우측, 1: 그 왼쪽...)
+     * @param {string} commandType - 명령 종류 (예: 'STOP', 'HOLD', 'ATTACK')
+     * @param {number} colorHex - 버튼 사각형에 입힐 고유 색상 (예: 0xaa3333)
+     */
+    createCommandButton(index, commandType, colorHex = 0x444444, icon ='') {
+        // 1. 우측 하단 기준 좌표 계산 (화면 가로 크기를 800px이라고 가정)
+        // 화면 크기에 맞게 800 부분을 수정하거나 `this.scale.width`를 사용하세요.
+        const screenWidth = this.scale.width; 
+        const buttonSpacing = 112; // 버튼 크기 96px + 여백 16px
+        
+        // 오른쪽 끝 여백(64px)에서 시작해 왼쪽(- 방향)으로 나열됩니다.
+        const startX = screenWidth - 64 - 96 - (index * buttonSpacing);
+
+        // 2. 명령어 배경 사각형 그리기
+        const buttonBg = this.add.graphics();
+        buttonBg.fillStyle(colorHex, 1);
+        buttonBg.fillRoundedRect(startX, this.hudY, 96, 96, 8);
+        //buttonBg.setStrokeStyle(2, 0xffffff);
+
+        // 3. 명령어 텍스트 얹기
+        const commandText = this.add.text(startX + 48, this.hudY + 48, icon.length>0? icon : commandType, {
+            fontSize: '18px',
+            fill: '#ffffff',
+            fontStyle: 'bold'
+        }).setOrigin(0.5, 0.5); // 텍스트 중앙 정렬
+
+        // 레이어 깊이 보장
+        buttonBg.setDepth(1);
+        commandText.setDepth(2);
+
+        // 4. 그래픽 객체에 인터랙션 활성화
+        buttonBg.setInteractive(new Phaser.Geom.Rectangle(startX, this.hudY, 96, 96), Phaser.Geom.Rectangle.Contains);
+
+        // 마우스 오버 효과 (피드백)
+        buttonBg.on('pointerover', () => buttonBg.setAlpha(0.8));
+        buttonBg.on('pointerout', () => buttonBg.setAlpha(1.0));
+
+        // 5. 클릭 시 GameScene의 선택된 분대들에게 명령 하달
+        buttonBg.on('pointerdown', () => {
+           // console.log(`[UI] ${commandType} 명령 버튼 클릭됨`);
+            
+            // GameScene에 전역 이벤트를 쏘아 현재 선택된 모든 분대에게 명령을 내립니다.
+            this.game.events.emit('command-squad-action', {
+                command: commandType
+            });
+
+            // 클릭 연출 (살짝 밟히는 느낌)
+            this.tweens.add({
+                targets: commandText,
+                scale: 0.85,
+                duration: 50,
+                yoyo: true,
+                onComplete: () => commandText.setScale(1)
+            });
+        });
+    }
+
+
+    
+    /**
+     * 지정된 유닛의 동적 증원(생산) 버튼을 생성하는 함수
+     * @param {number} index - 버튼의 순번 (0부터 시작, 가로 배치 자동 정렬용)
+     * @param {string} unitKey - Phaser에 등록된 유닛의 이미지/스프라이트 키 (예: 'unit_archer')
+     * @param {string} squadName - 새 분대에 부여할 화면 표시 이름 (예: '궁수대')
+     */
+    createSpawnButton(index, unitKey, squadName) {
+        // 1. 자동 정렬 좌표 계산 (버튼 크기 96px + 여백 16px = 간격 112px)
+        const buttonSpacing = 112; 
+        const startX = 64 + (index * buttonSpacing);
+
+        // 2. 배경 카드 그리기
+        const buttonBg = this.add.graphics();
+        buttonBg.fillStyle(0xffffff, 1);
+        buttonBg.fillRoundedRect(startX, this.hudY, 96, 96, 8);
+
+        // 3. 유닛 초상화 이미지 얹기 (중심점 기준이므로 가로 반(48), 세로 반(48)을 더해줍니다)
+        const buttonPortrait = this.add.image(startX + 48, this.hudY + 48, unitKey).setDisplaySize(96, 96);
+
+        // 깊이(z-index) 설정: 초상화가 무조건 배경 그래픽 위에 오도록 보장
+        buttonBg.setDepth(1);
+        buttonPortrait.setDepth(2);
+
+        // 4. 그래픽 객체에 히트박스 심고 인터랙션(클릭) 활성화
+        buttonBg.setInteractive(new Phaser.Geom.Rectangle(startX, this.hudY, 96, 96), Phaser.Geom.Rectangle.Contains);
+        
+        // 마우스가 올라갔을 때 피드백 효과 (투명도 조절로 버튼 느낌 내기)
+        buttonBg.on('pointerover', () => buttonPortrait.setAlpha(0.8));
+        buttonBg.on('pointerout', () => buttonPortrait.setAlpha(1.0));
+
+        // 5. 클릭 시 분대 생산 이벤트
+        buttonBg.on('pointerdown', () => {
+            const squads = this.registry.get('squads') || [];
+            
+            // [수정] 외부에서 받은 unitKey로 Squad 인스턴스 동적 소환
+            // GameScene이 들고 있던 spawnNewSquad 메서드가 있다면 활용하는 것이 가장 안전합니다.
+            let newSquad;
+            if (typeof this.gameScene.spawnNewSquad === 'function') {
+                newSquad = this.gameScene.spawnNewSquad(400, 400, unitKey, squadName);
+            } else {
+                // 차선책: 직접 생성하여 주입
+                const nextNumber = squads.length + 1;
+                newSquad = new Squad(this.gameScene, 400, 400, unitKey, `squad_${nextNumber}`, squadName);
+                squads.push(newSquad);
+                this.gameScene.squads = squads;
+            }
+
+            // 레거시 호환 및 UI 동기화
+            this.registry.set('squads', this.gameScene.squads || squads); 
+            this.initMultiSquadHUD();
+            
+            // 버튼을 누를 때 팅기는 시각 피드백 추가 (살짝 깜빡임)
+            this.tweens.add({
+                targets: buttonPortrait,
+                scale: 0.85,
+                duration: 50,
+                yoyo: true,
+                onComplete: () => buttonPortrait.setDisplaySize(96, 96)
+            });
+        });
+    }
+
     deselectAllSquads() {
         const squads = this.registry.get('squads') || [];
         squads.forEach(squad => {
@@ -99,6 +221,7 @@ export default class UIScene extends Phaser.Scene {
             }
         });
     }
+
     /**
      * 여러 개의 스쿼드 데이터를 받아 하단 중앙에 균등 배열 정렬 및 UI 생성
      */
@@ -118,6 +241,7 @@ export default class UIScene extends Phaser.Scene {
         //그래픽 초기화
         Object.values(this.squadsHUD).forEach(hud => {
             hud.bg.destroy();
+            hud.countBg.destroy();
             hud.portrait.destroy();
             hud.nameText.destroy();
             hud.hpBar.destroy();
@@ -138,6 +262,10 @@ export default class UIScene extends Phaser.Scene {
                     this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: false });
                     squad.selectSquad(false); // 인게임 부대 선택 상태도 갱신
                 } else {
+                    if(squad.command === 'Retreat'){
+                        console.log("후퇴 중인 분대는 선택할 수 없습니다.");
+                         return; // 후퇴 중인 분대는 선택 불가
+                    } 
                     this.deselectAllSquads();
                     this.game.events.emit('set-squad-selection', { id: squad.id, isSelected: true });
                     squad.selectSquad(true); // 인게임 부대 선택 상태도 갱신
@@ -158,7 +286,7 @@ export default class UIScene extends Phaser.Scene {
             portraitBox.strokeRect(contentStartX, contentStartY, portraitSize, portraitSize);
 
             // 분대 이름 텍스트 (SQ1, SQ2 등)
-            const nameText = this.add.text(cardX, contentStartY + portraitSize / 2, squad.name, {
+            const nameText = this.add.text(cardX, contentStartY + portraitSize / 2, '', {
                 fontSize: '16px',
                 fontWeight: 'bold',
                 fill: '#00aaff'
@@ -166,11 +294,11 @@ export default class UIScene extends Phaser.Scene {
 
             // 4. 우측 하단 분대원 수 배지
             const countBg = this.add.graphics();
-            countBg.fillStyle(0x00aaff, 1);
-            countBg.fillCircle(contentStartX + portraitSize - 4, contentStartY + portraitSize - 4, 11);
+            countBg.fillStyle(0x00aaff, 0);
+            countBg.fillCircle(contentStartX + portraitSize - 12, contentStartY + portraitSize - 12, 18);
 
-            const countText = this.add.text(contentStartX + portraitSize - 4, contentStartY + portraitSize - 4, '4', {
-                fontSize: '13px',
+            const countText = this.add.text(contentStartX + portraitSize - 12, contentStartY + portraitSize - 12, squad.units.length, {
+                fontSize: '36px',
                 fontWeight: 'bold',
                 fill: '#ffffff'
             }).setOrigin(0.5);
@@ -185,6 +313,7 @@ export default class UIScene extends Phaser.Scene {
             this.squadsHUD[squad.id] = {
                 cardX: cardX,
                 bg: bgGraphics,
+                countBg: countBg,
                 portrait: portraitBox,
                 nameText: nameText,
                 hpBar: hpBarGraphics,
@@ -267,44 +396,5 @@ export default class UIScene extends Phaser.Scene {
         return (x >= b.minX && x <= b.maxX && y >= b.minY && y <= b.maxY);
     }
 
-    drawIndividualUnitGuides(squad) {
-        if( this.FxGraphics[squad.id]) {
-            this.FxGraphics[squad.id].clear();
-            this.FxGraphics[squad.id].destroy();
-        }
-        
-        const fxGraphics = this.add.graphics();
-
-        const mainCamera = this.gameScene.cameras.main;
-        // 2. 카메라의 실시간 스크롤 값을 변수에 담습니다.
-        const cameraX = mainCamera.scrollX;
-        const cameraY = mainCamera.scrollY;
-        const zoom = mainCamera.zoom;
-
-        squad.units.forEach(unit => {
-            const finalX = squad.targetX + unit.squadOffsetX;
-            const finalY = squad.targetY + unit.squadOffsetY;
-            
-
-            fxGraphics.lineStyle(1, 0x00aaff, 0.6);
-            fxGraphics.lineBetween(unit.x - cameraX, unit.y - cameraY, finalX - cameraX, finalY - cameraY);
-
-            fxGraphics.fillStyle(0x00aaff, 0.8);
-            fxGraphics.fillCircle(finalX - cameraX, finalY - cameraY, 3);
-        });
-
-        fxGraphics.lineStyle(2, 0xffffff, 0.4);
-        fxGraphics.strokeCircle(squad.targetX - cameraX, squad.targetY - cameraY, 15);
-        this.FxGraphics[squad.id] = fxGraphics;
-
-        this.tweens.add({
-            targets: fxGraphics,
-            alpha: 0,
-            delay: 1000,
-            duration: 500,
-            onComplete: () => {
-                fxGraphics.destroy();
-            }
-        });
-    }
+    
 }
