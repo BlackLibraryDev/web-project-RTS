@@ -45,8 +45,9 @@ export default class Squad {
         }   
         this.maxCount = count; // 최대 분대원 수 저장
 
-        for (let i = 0; i < count; i++) {
-            this.reinforceSquad(this.unitKey);
+        //    count =1 //임시 
+        for (let i = 0; i < count ; i++) {
+            this.reinforceSquad(this.unitKey,false);
         }
         this.selectSquad(false); // 초기 선택 상태는 false
 
@@ -63,7 +64,7 @@ export default class Squad {
         this.units.forEach(unit => unit.setSelected(isSelected));
     }
     //분대충원
-    reinforceSquad(unitKey) {
+    reinforceSquad(unitKey, updateUI = true) {
         if (this.units.length < this.maxCount) {
             const spacing = 45;
             const i = this.units.length; // 현재 분대원 수
@@ -73,8 +74,9 @@ export default class Squad {
             const unit = new Unit(this.scene, -100 + xOffset, this.targetY + yOffset, unitKey);
             unit.squadOffsetX = xOffset;
             unit.squadOffsetY = yOffset;
-
+            unit.setSelected(this.isSelected); // 현재 분대 선택 상태에 맞춰 유닛 선택 상태 설정
             this.units.push(unit);
+            if(updateUI) this.scene.game.events.emit('update-squads', { id: this.id });
         } else {
             console.log("분대가 이미 최대 인원입니다.");
         }

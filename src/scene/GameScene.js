@@ -79,6 +79,8 @@ export default class GameScene extends Phaser.Scene {
                             break;
                         case 'Retreat':
                             squad.retreat();
+                            this.playerSquad=null;
+                            this.cameras.main.stopFollow();
                             break;
                         default:
                             console.warn(`알 수 없는 명령어: ${data.command}`);
@@ -137,6 +139,7 @@ export default class GameScene extends Phaser.Scene {
             }else{
                 if(this.playerSquad && this.playerSquad.id === data.id){
                     this.playerSquad = null;
+                    this.cameras.main.stopFollow();
                 }
             }
         });

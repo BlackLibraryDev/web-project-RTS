@@ -65,7 +65,8 @@ export default class UIScene extends Phaser.Scene {
         // 특정 스쿼드의 정보(체력, 탄약, 생존인원) 업데이트 이벤트
         // 예: this.game.events.emit('update-squad-hud', { id: 'squad_1', hpRatio: 0.8, ammoRatio: 0.5, count: 3 });
         this.game.events.on('update-squads', (data) => {
-           // this.initMultiSquadHUD();
+        
+           this.initMultiSquadHUD();
         });
 
         this.game.events.on('update-squad-hud', (data) => {
@@ -111,8 +112,9 @@ export default class UIScene extends Phaser.Scene {
         //buttonBg.setStrokeStyle(2, 0xffffff);
 
         // 3. 명령어 텍스트 얹기
-        const commandText = this.add.text(startX + 48, this.hudY + 48, icon.length>0? icon : commandType, {
-            fontSize: '18px',
+        const txt = icon.length > 0 ? icon : commandType;
+        const commandText = this.add.text(startX + 48, this.hudY + 48, txt, {
+            fontSize: txt.length>2 ? '18px' : '48px',
             fill: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5, 0.5); // 텍스트 중앙 정렬
@@ -243,6 +245,7 @@ export default class UIScene extends Phaser.Scene {
             hud.bg.destroy();
             hud.countBg.destroy();
             hud.portrait.destroy();
+            hud.portraitImage.destroy();
             hud.nameText.destroy();
             hud.hpBar.destroy();
             hud.ammoBar.destroy();
@@ -284,6 +287,7 @@ export default class UIScene extends Phaser.Scene {
             portraitBox.fillRect(contentStartX, contentStartY, portraitSize, portraitSize);
             portraitBox.lineStyle(2, 0x00aaff, 0.8);
             portraitBox.strokeRect(contentStartX, contentStartY, portraitSize, portraitSize);
+            const buttonPortrait = this.add.image(contentStartX + 32, contentStartY + 16, squad.unitKey).setDisplaySize(64, 64);
 
             // 분대 이름 텍스트 (SQ1, SQ2 등)
             const nameText = this.add.text(cardX, contentStartY + portraitSize / 2, '', {
@@ -315,6 +319,7 @@ export default class UIScene extends Phaser.Scene {
                 bg: bgGraphics,
                 countBg: countBg,
                 portrait: portraitBox,
+                portraitImage: buttonPortrait,  
                 nameText: nameText,
                 hpBar: hpBarGraphics,
                 ammoBar: ammoBarGraphics,
