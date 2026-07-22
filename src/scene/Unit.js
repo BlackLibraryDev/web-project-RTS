@@ -1,5 +1,6 @@
 export default class Unit extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, texture) {
+    
+    constructor(scene, x, y, texture, id, team) {
         super(scene, x, y, texture);
         
         scene.add.existing(this);
@@ -11,8 +12,25 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         // (x, y) 좌표가 스프라이트의 맨 아래 가운데가 됩니다.
         this.setOrigin(0.5, 0.9);
 
+        this.id = id;
+        this.team = team;
+        this.targetEnemy = null; // Squad에서 지정해준 타겟 유닛
+
+        // 전투 스탯
+        this.hp = 100;
+        this.attackPower = 15;
+        //this.attackRange = 250;   // 사격 사거리
+        this.attackCooldown = 1200; // 사격 주기 (1.2초)
+        this.lastAttackTime = 0;
+        this.isDead = false;
+
         this.isSelected = false;
         this.selectionRing = scene.add.graphics();
+
+            // Unit.js 생성자 내부
+    this.lastAttackTime = 0;
+    this.attackCooldown = 1500; // 공격 속도: 1.5초당 1회
+
         
         const idleKey = `${texture}_idle`;
         const walkKey = `${texture}_walk`;
@@ -75,18 +93,90 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         
         this.selectionRing.strokeEllipse(this.x, footY, 28, 10);
     }
-
+    // Squad가 타겟을 쥐어줄 때 호출
+    setTarget(enemyUnit) {
+        this.targetEnemy = enemyUnit;
+    }
     preUpdate(time, delta) {
         super.preUpdate(time, delta);
-        
-        // 매 프레임 애니메이션 상태 업데이트
-        this.updateAnimation();
+
         // 발밑 링 업데이트
         this.updateRing();
+
+        // 1. 유닛 사망 상태면 추가 연산 중단
+        if (!this.active || this.isDead) return;
+
+        // 2. 애니메이션 상태 갱신 (속도에 따른 walk/idle)
+        this.updateAnimation();
+        // 2. 사격 로직 실행
+        this.handleShooting(time);
+
+    }
+    handleShooting(time) {
+        // 타겟이 없거나 이미 죽었으면 사격 취소
+        if (!this.targetEnemy || !this.targetEnemy.active || this.targetEnemy.isDead) {
+            this.targetEnemy = null;
+            return;
+        }
+
+        // 타겟과의 실제 거리 계산
+        const dist = Phaser.Math.Distance.Between(this.x, this.y, this.targetEnemy.x, this.targetEnemy.y);
+
+        // 사거리 내에 들어왔을 때 사격
+       // if (dist <= this.attackRange) {
+            // 적을 향해 좌우 반전(Flip)
+            this.setFlipX(this.targetEnemy.x < this.x);
+
+            // 쿨타임 체크 후 사격
+            if (time > this.lastAttackTime + this.attackCooldown) {
+                this.lastAttackTime = time;
+                this.fireBullet(this.targetEnemy);
+            }
+       // }
     }
 
-    destroy(fromScene) {
-        if (this.selectionRing) this.selectionRing.destroy();
-        super.destroy(fromScene);
+    fireBullet(target) {
+        // 1. 공격 애니메이션 재생 (예: 'unit_archer_attack')
+        const attackKey = `${this.texture.key}_attack`;
+        if (this.scene.anims.exists(attackKey)) {
+            this.anims.play(attackKey, true);
+        }
+
+        // 2. 즉발 데미지 적용 (또는 여기에 투사체/총알 Sprite 소환 로직 추가)
+        console.log(`[사격!] ${this.texture.key} -> ${target.texture.key} 에게 ${this.attackPower} 데미지!`);
+        target.takeDamage(this.attackPower);
     }
+
+    takeDamage(amount) {
+        this.hp -= amount;
+        
+        // 피격 피드백 (붉은색으로 잠시 깜빡임)
+        this.setTint(0xff0000);
+        this.scene.time.delayedCall(100, () => this.clearTint());
+
+        if (this.hp <= 0 && !this.isDead) {
+            this.isDead = true;
+            //this.setActive(false);
+            //this.setVisible(false);
+            if (this.body) this.body.enable = false;
+            this.destroy(this.scene);
+        }
+    }
+    destroy(fromScene) {
+    if (this.selectionRing) this.selectionRing.destroy();
+
+    // 1. destroy 되기 전에 안전하게 씬과 이벤트 버스를 미리 변수에 담아둡니다.
+    const scene = this.scene;
+    const events = scene?.game?.events;
+    const unitId = this.id; // 필요하다면 id도 미리 캡처
+
+    if (scene && events) {
+        scene.time.delayedCall(50, () => {
+            // 미리 캡처해 둔 events 객체를 사용하므로 this.scene이 null이 되어도 에러가 나지 않습니다.
+            events.emit('update-squads', { id: unitId });
+        });
+    }
+    // 2. 부모 destroy 실행 (이제 this.scene이 null이 됩니다)
+    super.destroy(fromScene);
+}
 }

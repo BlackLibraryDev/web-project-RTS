@@ -8,13 +8,19 @@ export default class GameScene extends Phaser.Scene {
     create() {
         // 1. 전체 맵 월드 크기 정의 (가로 3000px, 세로 600px)
         const minHeight = 200;
-        const worldWidth = 5000;
+        const worldWidth = 2000;
         const worldHeight = 600;
+
+        let playerTeam = 1;
+        this.registry.set('playerTeam', this.playerTeam);
+        
         this.physics.world.setBounds(-100, minHeight-100, worldWidth+100, worldHeight+100);
         const worldBounds = {
-            width: worldWidth,
+            width: worldWidth+2000,
             height: worldHeight,
-            minHeight: minHeight
+            minHeight: minHeight,
+            team1posX : -100,
+            team2posX : worldWidth+100,
         };
         this.registry.set('worldBounds', worldBounds); // 전역 레지스트리에 저장
         // 2. [핵심] 유닛들이 이동 가능한 Y축 범위 정의 (예: 화면 하단 바닥 레이어 쪽 350px ~ 550px 영역)
@@ -229,9 +235,9 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    update() {
+    update(time,delta) {
         this.squads.forEach(squad => {
-            squad.update();
+            squad.update(time,delta);
         });
     }
 }

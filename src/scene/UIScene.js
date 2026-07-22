@@ -46,7 +46,7 @@ export default class UIScene extends Phaser.Scene {
 
         //버튼
         // 0번째 칸에 아처 생산 버튼
-        this.createSpawnButton(0, 'unit_archer', 'Archer');
+        this.createSpawnButton(0, 'unit_archer', 'Archer',2); //테스트, 팀2
         this.createSpawnButton(1, 'unit_rifleman', 'Rifleman');
         this.createSpawnButton(2, 'unit_sniper', 'Sniper');
 
@@ -157,8 +157,9 @@ export default class UIScene extends Phaser.Scene {
      * @param {number} index - 버튼의 순번 (0부터 시작, 가로 배치 자동 정렬용)
      * @param {string} unitKey - Phaser에 등록된 유닛의 이미지/스프라이트 키 (예: 'unit_archer')
      * @param {string} squadName - 새 분대에 부여할 화면 표시 이름 (예: '궁수대')
+     * @param {number} team - 분대가 속할 팀 번호
      */
-    createSpawnButton(index, unitKey, squadName) {
+    createSpawnButton(index, unitKey, squadName, team = 1) {
         // 1. 자동 정렬 좌표 계산 (버튼 크기 96px + 여백 16px = 간격 112px)
         const buttonSpacing = 112; 
         const startX = 64 + (index * buttonSpacing);
@@ -194,7 +195,7 @@ export default class UIScene extends Phaser.Scene {
             } else {
                 // 차선책: 직접 생성하여 주입
                 const nextNumber = squads.length + 1;
-                newSquad = new Squad(this.gameScene, 400, 400, unitKey, `squad_${nextNumber}`, squadName);
+                newSquad = new Squad(this.gameScene, 400, 400, unitKey, team);
                 squads.push(newSquad);
                 this.gameScene.squads = squads;
             }
@@ -228,7 +229,14 @@ export default class UIScene extends Phaser.Scene {
      * 여러 개의 스쿼드 데이터를 받아 하단 중앙에 균등 배열 정렬 및 UI 생성
      */
     initMultiSquadHUD() {
-        const squads = this.registry.get('squads') || [];
+        const allSquads = this.registry.get('squads') || [];
+        const playerTeam = this.registry.get('playerTeam') || 1;
+        // 팀이 playerTeam이고, 살아있는 unit이 1개 이상 남아있는 분대만 필터링
+        const squads = allSquads.filter(squad => 
+            squad.team === playerTeam && 
+            squad.units && 
+            squad.units.length > 0
+        );
         const screenWidth = this.scale.width;
         const spacing = 12; // HUD 카드 간의 간격
         const totalSquads = squads.length;
