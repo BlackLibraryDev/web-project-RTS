@@ -39,11 +39,17 @@ export default class Squad {
 
         this.hp = 100;      // 현재 체력
         this.maxHp = 100;   // 최대 체력
-        this.ammo = 30;     // 현재 탄약
-        this.maxAmmo = 30;  // 최대 탄약
+        this.ammo = 0;     // 현재 탄약
+        this.maxAmmo = 200;  // 최대 탄약
         this.memberCount = 4; // 분대원 수
-        this.range = 700;//사거리
-
+        this.weapon = {
+            damage: 7,         
+            range : 600,// 사거리
+            cooldown: 1200,   // 발사 후 쿨타임 (ms)
+            burstCount: 3,    // 연사 발수 (예: 4연발)
+            burstDelay: 95,   // 연사 간격 (ms)
+            bulletSpeed: 960  // 탄 속도 (px/sec)
+        };
         this.command ='';
         this.isSelected = false;
         const spacing = 45; // 간격 조정
@@ -58,12 +64,15 @@ export default class Squad {
                 break;
             case 'unit_sniper':
                 count = 1;
+                this.weapon.range =900;
+                this.weapon.burstCount =1;
+                this.weapon.damage = 140;
+                this.cooldown = 3200;
                 break;
             default:
                 count = 4; // 기본값
         }   
-        this.maxCount = count; // 최대 분대원 수 저장
-
+        this.maxCount = count; // 최대 분대원 수 저장]
         //    count =1 //임시 
         for (let i = 0; i < count ; i++) {
             this.reinforceSquad(this.unitKey,false);
@@ -92,11 +101,13 @@ export default class Squad {
             const yOffset = (i - 1.5) * spacing;
             const xOffset = Phaser.Math.Between(-10, 10);
 
-            const unit = new Unit(this.scene, this.startX + xOffset, this.targetY + yOffset, unitKey, this.id, this.team );
+            const unit = new Unit(this.scene, this.startX + xOffset, this.targetY + yOffset, unitKey, this );
             unit.squadOffsetX = xOffset;
             unit.squadOffsetY = yOffset;
             unit.setSelected(this.isSelected); // 현재 분대 선택 상태에 맞춰 유닛 선택 상태 설정
             this.units.push(unit);
+
+            this.ammo += this.maxAmmo/this.maxCount;
             if(updateUI) this.scene.game.events.emit('update-squads', { id: this.id });
         } else {
             console.log("분대가 이미 최대 인원입니다.");
@@ -139,7 +150,7 @@ export default class Squad {
         const enemySquads = this.scene.squads.filter(s => s.team !== this.team && s.units.length > 0);
         
         let closestSquad = null;
-        let minDistance = 800; // 분대 수색 사거리 (픽셀)
+        let minDistance = this.weapon.range; // 분대 수색 사거리 (픽셀)
 
         // 대표 위치(첫 번째 유닛 좌표 기준) 계산
         const leader = this.units[0];
@@ -187,6 +198,16 @@ export default class Squad {
             });
         });
     }
+    useAmmo(amount){
+        if(this.ammo<=0){ return}
+        this.ammo -= amount;
+         this.scene.game.events.emit('update-squad-hud', {
+                id: this.id, 
+                hpRatio:this.hp/this.maxHp, 
+                ammoRatio:this.ammo/this.maxAmmo 
+        });
+        if(this.ammo<0){ this.ammo = 0}
+    }
 
     update(time,delta) {
         // 1. 살아있는 유닛들만 필터링
@@ -198,8 +219,11 @@ export default class Squad {
             this.lastSearchTime = time;
             this.searchEnemySquad();
         }
-
+        const hp0 = Number(this.hp);
+        this.hp = 0;
         this.units.forEach(unit => {
+            this.maxHp = unit.maxHp * this.maxCount;
+            this.hp += unit.hp;
             const unitTargetX = this.targetX + unit.squadOffsetX;
             const unitTargetY = this.targetY + unit.squadOffsetY;
             const distance = Phaser.Math.Distance.Between(unit.x, unit.y, unitTargetX, unitTargetY);
@@ -219,5 +243,14 @@ export default class Squad {
                 unit.setVelocity(0, 0);
             }
         });
+        //체력 변화값이 있을 경우
+        if(hp0 != this.hp ){
+           // console.log(this.hp/this.maxHp)
+             this.scene.game.events.emit('update-squad-hud', {
+                 id: this.id, 
+                 hpRatio:this.hp/this.maxHp, 
+                 ammoRatio:this.ammo/this.maxAmmo 
+            });
+        }
     }
 }

@@ -342,7 +342,7 @@ export default class UIScene extends Phaser.Scene {
 
             // 개별 초기화 렌더링
             this.drawHudBackground(squad.id, squad.isSelected);
-            this.updateBars(squad.id, 1.0, 1.0);
+            this.updateBars(squad.id, squad.hp/squad.maxHp, squad.ammo/squad.maxAmmo);
         });
 
     }

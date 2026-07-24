@@ -19,6 +19,7 @@ export default class PreloadScene extends Phaser.Scene {
         // 1. TSV 파일을 일반 텍스트로 로드
         this.load.text('itemTable', 'assets/data/items.tsv');
 
+        this.load.spritesheet('bullet', 'assets/bullet.png',{ frameWidth: 64 , frameHeight: 16 })
 
        this.load.spritesheet('unit_archer', 'assets/archer.png', { frameWidth: 128 , frameHeight: 128 });
         this.load.spritesheet('unit_rifleman', 'assets/rifleman.png', { frameWidth: 128 , frameHeight: 128 });
