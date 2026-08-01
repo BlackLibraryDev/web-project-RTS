@@ -45,19 +45,7 @@ export default class UIScene extends Phaser.Scene {
             });
         });
 
-        //버튼
-        // 0번째 칸에 아처 생산 버튼
-        //this.createSpawnButton(0, 'unit_archer', 'Archer',2); //테스트, 팀2
-        //this.createSpawnButton(1, 'unit_rifleman', 'Rifleman');
-        //this.createSpawnButton(2, 'unit_sniper', 'Sniper');
 
-        // [우측 하단] 명령어 버튼들 (0번부터 왼쪽으로 배치)
-        // index 0: 맨 우측 끝 버튼
-        //this.createCommandButton(2, 'Retreat', 0x992222, '‼');   // 정지 (붉은빛)
-        //this.createCommandButton(1, 'Reinforce', 0x222299, '✚');   // 위치 사수 (푸른빛)
-        //this.createCommandButton(2, 'ATTACK', 0x229922, '⚔'); // 공격 이동 (초록빛)
-        //this.createCommandButton(0, 'Stop', 0x22eeff, '✋'); // 충원
-        
 
         // ==========================================
         // 4. 글로벌 멀티 스쿼드 이벤트 리스너
@@ -90,7 +78,99 @@ export default class UIScene extends Phaser.Scene {
             }
         });
 
+        // 상단 자원(Manpower, Ammo, Fuel) HUD 바 생성
+        this.createResourceHUD();
+       
+
         this.game.events.emit('gameStart');
+    }
+
+    /**
+     * 상단 자원(Manpower / Ammo / Fuel) 표시 HUD 생성
+     */
+    createResourceHUD() {
+        const topBarY = 15;
+        const startX = 20;
+
+        // 패널 바탕 배경 생성
+        const bg = this.add.graphics();
+        bg.fillStyle(0x111115, 0.85);
+        bg.lineStyle(1, 0x444455, 1);
+        bg.fillRoundedRect(startX, topBarY, 460, 60, 8);
+        bg.strokeRoundedRect(startX, topBarY, 460, 60, 8);
+        bg.setScrollFactor(0);
+        bg.setDepth(100);
+
+        this.resourceTexts = {};
+
+        const resourceTypes = [
+            { key: 'manpower', icon: '👤', color: '#ffdd55', x: startX + 15 },
+            { key: 'ammo', icon: '⚡', color: '#ff5555', x: startX + 145 },
+            { key: 'fuel', icon: '🛢', color: '#55aaff', x: startX + 315 }
+        ];
+        //⌛️시간
+
+        resourceTypes.forEach((res) => {
+            // 아이콘 텍스트
+            this.add.text(res.x, topBarY + 12, res.icon, {
+                fontSize: '48px'
+            }).setScrollFactor(0).setDepth(101);
+
+            // 숫자 출력 텍스트
+            const valueText = this.add.text(res.x + 50, topBarY + 12, '0', {
+                fontSize: '42px',
+                fill: res.color,
+                fontStyle: 'bold',
+                fontFamily: 'monospace'
+            }).setScrollFactor(0).setDepth(101);
+
+            this.resourceTexts[res.key] = valueText;
+        });
+
+        // 초기 수치 로드
+        this.updateResourceDisplay();
+
+        // Registry 변경 감지 및 실시간 업데이트 이벤트 리스너 등록
+        this.registry.events.on('changedata-resources', () => this.updateResourceDisplay());
+        this.game.events.on('update-resources', () => this.updateResourceDisplay());
+    }
+
+    /**
+     * 1000 이상 단위 'k', 1000000 이상 단위 'M' 포맷팅 함수
+     */
+    formatResourceValue(val) {
+        if (typeof val !== 'number' || isNaN(val)) return '0';
+        if (val >= 1000000) {
+            const formatted = (val / 1000000).toFixed(1).replace(/\.0$/, '');
+            return `${formatted}M`;
+        }
+        if (val >= 1000) {
+            const formatted = (val / 1000).toFixed(1).replace(/\.0$/, '');
+            return `${formatted}k`;
+        }
+        return val.toString();
+    }
+
+    /**
+     * Registry 또는 GameScene 자원 수치를 읽어와 UI 텍스트 갱신
+     */
+    updateResourceDisplay() {
+        if (!this.resourceTexts) return;
+
+        // registry 우선 참조, 없을 시 GameScene 참조
+        const resourcesData = this.registry.get('resources') || 
+            (this.gameScene && this.gameScene.resources);
+
+        const team1Resources = resourcesData && resourcesData.team1 
+            ? resourcesData.team1 
+            : { manpower: 0, ammo: 0, fuel: 0 };
+
+        ['manpower', 'ammo', 'fuel'].forEach((key) => {
+            if (this.resourceTexts[key]) {
+                const rawVal = team1Resources[key] ?? 0;
+                this.resourceTexts[key].setText(this.formatResourceValue(rawVal));
+            }
+        });
     }
     renderCommanderButtons(){
         //console.log("renderCommanderButtons", array);
@@ -101,9 +181,30 @@ export default class UIScene extends Phaser.Scene {
             button.item2.destroy();
         });
         this.commandButtons = [];
+
+        if(this.portraitbox !=null) this.portraitbox.clear();
+        if(this.portrait !=null) this.portrait.destroy();
+        if(this.nameTxt !=null) this.nameTxt.destroy();
         
         if(this.selectedSquad == null){  return; } //선택 해제 시 버튼 제거
         if(this.selectedSquad.units.length <=0){  return; } //선택된 분대가 없으면 버튼 제거
+
+
+         const screenWidth = this.scale.width; 
+        const startX = screenWidth - 544;
+        const startY = this.hudY+ 80-96-8; // 하단 Y 위치 고정
+        //포트레잇
+        this.portraitbox = this.add.graphics();
+        this.portraitbox.fillStyle(0xffffff, 1);
+        this.portraitbox.fillRoundedRect(startX, startY, 144, 200, 8);
+        this.portrait = this.add.image(startX + 72, startY + 72, this.selectedSquad.unitKey).setDisplaySize(144, 144);
+        this.nameTxt = this.add.text(startX + 72, startY + 180, this.selectedSquad.unitKey.split('_')[1], {
+            fontSize: '32px',
+            fill: '#000000',
+            fontStyle: 'bold',
+            fontFamily: 'monospace'
+        }).setOrigin(0.5, 0.5);
+
         //새로운 버튼 생성
         let cmdindex= 0;
         let spawnindex= 0;
@@ -116,6 +217,7 @@ export default class UIScene extends Phaser.Scene {
                     'Stop': {icon:'✋',color:0x22eeff},
                     'Reinforce': {icon:'✚',color:0x222299},
                     'Retreat': {icon:'‼',color:0x992222},
+                    'empty': {icon:'  ',color:0x444444},
                 };
                 this.createCommandButton(cmdindex, command, iconMap[command].color, iconMap[command].icon);
                 cmdindex++;

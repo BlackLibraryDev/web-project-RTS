@@ -59,7 +59,7 @@ export default class Squad {
                 this.isMovable = false; // 이동 불가차량
                 this.visionRange = 600;
                 this.isMovable = false; // 이동 불가차량
-                this.commandArray = ['Stop',  'unit_sniper','unit_rifleman']; //,'unit_archer'
+                this.commandArray = ['Stop', 'empty','empty',  'unit_sniper','unit_rifleman']; //,'unit_archer'
                 //커맨더밴은 시작 위치를 고정
                 this.startX = x;
                 this.startY = y;
@@ -104,7 +104,8 @@ export default class Squad {
         }
         this.selectSquad(false); // 초기 선택 상태는 false
 
-        
+        //자원소모
+        this.useResource(count, this.maxAmmo, 0);
 
         //*** 팀으로 변경 시 나중에 선 그리기 없애기
         if(this.isMovable){
@@ -134,15 +135,27 @@ export default class Squad {
             unit.setSelected(this.isSelected); // 현재 분대 선택 상태에 맞춰 유닛 선택 상태 설정
             this.units.push(unit);
 
+            
             this.ammo += this.maxAmmo/this.maxCount;
             if(this.ammo> this.maxAmmo) this.ammo =this.maxAmmo;
 
-            if(updateUI) this.scene.game.events.emit('update-squads', { id: this.id });
+
+            if(updateUI) {
+                this.useResource(1,this.maxAmmo/this.maxCount,0);
+                this.scene.game.events.emit('update-squads', { id: this.id });
+            }
         } else {
             console.log("분대가 이미 최대 인원입니다.");
         }
     }
-    
+    useResource( manpower = 1, ammo = 0, fuel = 0){
+        const resources = this.scene.registry.get('resources');
+        const team = resources['team'+this.team];
+        team.manpower -= manpower;
+        team.ammo -= ammo;
+        team.fuel -= fuel;
+        this.scene.registry.set('resources', resources);
+    }
     /**
      * [핵심] 장애물(엄폐물) 클릭 시 호출할 함수
      * 장애물의 위치와 유닛 배치 배열(배치법)을 받아 유닛별 오프셋을 수동 지정합니다.

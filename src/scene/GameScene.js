@@ -18,13 +18,13 @@ export default class GameScene extends Phaser.Scene {
 
         this.resources = {
             team1: {
-                manpower: 100,
-                ammo: 50000,
+                manpower: 110,
+                ammo: 2000,
                 fuel: 200
             },
             team2: {
                 manpower: 100,
-                ammo: 50000,
+                ammo: 2000,
                 fuel: 200
             }
         };
