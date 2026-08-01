@@ -15,23 +15,45 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         this.parent = parent;
         this.id = parent.id;
         this.team = parent.team;
-        this.targetEnemy = null; // Squad에서 지정해준 타겟 유닛
         this.weapon = structuredClone(parent.weapon);
+        // 시야 범위 스탯 추가 (픽셀 단위)
+        this.visionRange = parent.visionRange || this.weapon.range +100;
+
+        this.targetEnemy = null; // Squad에서 지정해준 타겟 유닛
         // 전투 스탯
-        this.hp = 100;
-        this.maxHp = 100;
-        this.attackPower = 15;
+        switch (parent.unitKey) {
+            case 'unit_archer':
+                this.hp = 50;
+                this.maxHp = 50;
+                break;
+            case 'unit_rifleman':
+                this.hp = 80;
+                this.maxHp = 80;
+                break;
+            case 'unit_sniper':
+                this.hp = 40;
+                this.maxHp = 40;
+                break;
+            case 'unit_commandVan':
+                this.hp = 1000;
+                this.maxHp = 1000;
+                this.weapon = null// 차량은 사격 불가
+                break;
+            default:
+                this.hp = 100;
+                this.maxHp = 100;
+        }
+
         //this.attackRange = 250;   // 사격 사거리
-        this.attackCooldown = 1200; // 사격 주기 (1.2초)
+        this.attackCooldown = 3000; // 사격 주기(weapon.cooldown)
         this.lastAttackTime = 0;
         this.isDead = false;
 
+        //원형 크기
         this.isSelected = false;
         this.selectionRing = scene.add.graphics();
-
-            // Unit.js 생성자 내부
-    this.lastAttackTime = 0;
-    this.attackCooldown = 1500; // 공격 속도: 1.5초당 1회
+        this.sizeX = parent.type>1? 144 : 36;
+        this.sizeY = parent.type>1? 48 : 16;
 
         
         const idleKey = `${texture}_idle`;
@@ -52,9 +74,24 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         this.isSelected = isSelected;
         if (!this.isSelected) {
             this.selectionRing.clear();
+        }else{
+            //console.log('유닛 선택됨: ', this.hp, this.maxHp, this.id);
         }
     }
+        /**
+     * 유닛 본체 및 부속 오브젝트(선택 링, 체력바 등) 통합 시야 처리
+     */
+    setUnitVisibility(isVisible) {
+        this.setVisible(isVisible);
 
+        // 유닛 하단 선택 링이나 기타 부속 오브젝트가 있다면 함께 숨김/표시
+        if (this.selectionRing) {
+            this.selectionRing.setVisible(isVisible);
+        }
+        if (this.hpBar) {
+            this.hpBar.setVisible(isVisible);
+        }
+    }
     // --- [핵심 2] 이동 상태에 따른 애니메이션 제어 함수 ---
     updateAnimation() {
         // 1. 물리 엔진의 현재 속도를 확인하여 이동 중인지 판단
@@ -93,7 +130,7 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         // 약간의 여유(offset)만 줍니다.
         const footY = this.y + 2; 
         
-        this.selectionRing.strokeEllipse(this.x, footY, 28, 10);
+        this.selectionRing.strokeEllipse(this.x, footY, this.sizeX, this.sizeY);
     }
     // Squad가 타겟을 쥐어줄 때 호출
     setTarget(enemyUnit) {
@@ -104,6 +141,9 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
 
         // 발밑 링 업데이트
         this.updateRing();
+        
+        // ★ Y좌표 기준 뎁스 정렬 (아래쪽 Y값 유닛이 앞쪽에 그려짐)
+        this.setDepth(this.y);
 
         // 1. 유닛 사망 상태면 추가 연산 중단
         if (!this.active || this.isDead) return;
@@ -124,22 +164,25 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
             this.targetEnemy = null;
             return;
         }
-
+        if( this.weapon ==null || this.weapon.range <= 0){
+            return;
+        }
         // 타겟과의 실제 거리 계산
         const dist = Phaser.Math.Distance.Between(this.x, this.y, this.targetEnemy.x, this.targetEnemy.y);
 
         // 사거리 내에 들어왔을 때 사격
-       // if (dist <= this.attackRange) {
+       if (dist <= this.visionRange) {
             // 적을 향해 좌우 반전(Flip)
             this.setFlipX(this.targetEnemy.x < this.x);
 
             // 쿨타임 체크 후 사격
             if (time > this.lastAttackTime + this.attackCooldown) {
                 this.lastAttackTime = time;
+                this.attackCooldown = this.weapon.cooldown + Phaser.Math.Between(0,300);
                 this.fireBurst(this.targetEnemy);
                 
             }
-       // }
+       }
     }
 
     /**
@@ -158,7 +201,7 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
             repeat: this.weapon.burstCount-1, // 총 4발 (0, 1, 2, 3)
             callback: () => {
                 // 사격 중간에 타겟이 파괴되어도 남은 탄환은 마지막 타겟 좌표 방향으로 날아갑니다.
-                if (target) {
+                if (target && this.scene !=null) {
                     this.spawnBullet(target);
                 }
             },
@@ -171,6 +214,7 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
      * 물리 충돌(overlap) 대신 목표 지점에 도달했을 때 사라지는 탄환 발사 로직
      */
     spawnBullet(target) {
+        if(!this.scene) return;
         const spawnX = this.x;
         const spawnY = this.y - 12;
 
@@ -210,14 +254,16 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
     }
 
     takeDamage(amount) {
-        const damage = Math.random()*amount;
-        if(this.hp < damage){
+        
+        const damage = Math.random()*100;
+        if(damage < amount && this.parent.type==1){
             this.hp = 0;
 
         }else{
-            this.hp -= damage;
+            this.hp -= amount;
         }
-        //this.hp -= amount;
+        
+        
         
         // 피격 피드백 (붉은색으로 잠시 깜빡임)
         this.setTint(0xff0000);
@@ -232,20 +278,21 @@ export default class Unit extends Phaser.Physics.Arcade.Sprite {
         }
     }
     destroy(fromScene) {
-    if (this.selectionRing) this.selectionRing.destroy();
+        if (this.selectionRing) this.selectionRing.destroy();
 
-    // 1. destroy 되기 전에 안전하게 씬과 이벤트 버스를 미리 변수에 담아둡니다.
-    const scene = this.scene;
-    const events = scene?.game?.events;
-    const unitId = this.id; // 필요하다면 id도 미리 캡처
+        // 1. destroy 되기 전에 안전하게 씬과 이벤트 버스를 미리 변수에 담아둡니다.
+        const scene = this.scene;
+        const events = scene?.game?.events;
+        const unitId = this.id; // 필요하다면 id도 미리 캡처
 
-    if (scene && events) {
-        scene.time.delayedCall(50, () => {
-            // 미리 캡처해 둔 events 객체를 사용하므로 this.scene이 null이 되어도 에러가 나지 않습니다.
-            events.emit('update-squads', { id: unitId });
-        });
+        if (scene && events) {
+            scene.time.delayedCall(50, () => {
+                // 미리 캡처해 둔 events 객체를 사용하므로 this.scene이 null이 되어도 에러가 나지 않습니다.
+                events.emit('update-squads', { id: unitId });
+                super.destroy(fromScene);
+            });
+        }
+        // 2. 부모 destroy 실행 (이제 this.scene이 null이 됩니다)
+        
     }
-    // 2. 부모 destroy 실행 (이제 this.scene이 null이 됩니다)
-    super.destroy(fromScene);
-}
 }
