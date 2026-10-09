@@ -11,9 +11,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+
+        //metaMap
+        this.scene.launch('metaMap');
         // UI 씬 병렬 실행
         this.scene.run('UIScene');
-
+        this.scene.bringToTop('UIScene'); // UIScene을 최상위로 올려서 UI가 항상 보이도록 함
         // ESC 키 등록
         this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
@@ -51,6 +54,9 @@ export default class GameScene extends Phaser.Scene {
             uiScene.events.off(GameEvents.GAME_RESUMED, this.resumeGame, this);
         });
        
+        ///
+        
+        
     }
     
     update() {

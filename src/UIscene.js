@@ -1,5 +1,6 @@
 // src/UIscene.js
 import { GameEvents } from './events.js';
+import { LanguageData } from './translate.js';
 
 export default class UIScene extends Phaser.Scene {
     constructor() {
@@ -36,11 +37,7 @@ export default class UIScene extends Phaser.Scene {
             this.pauseMenuContainer.setVisible(isPaused);
         }, this);
 
-        // 화면 크기 변경 시 팝업 위치 재조정
-        this.scale.on('resize', (gameSize) => {
-            this.pauseMenuContainer.setPosition(gameSize.width / 2, gameSize.height / 2);
-            overlay.setSize(gameSize.width, gameSize.height);
-        });
+        
     }
 
     make_pauseManuContainer() {
@@ -55,13 +52,13 @@ export default class UIScene extends Phaser.Scene {
         const menuBg = this.add.rectangle(0, 0, 320, 240, 0x222222, 0.95)
             .setStrokeStyle(2, 0xffffff);
 
-        const titleText = this.add.text(0, -80, 'PAUSED', {
+        const titleText = this.add.text(0, -80, LanguageData.getText('paused'), {
             fontSize: '28px',
             fill: '#ffffff'
         }).setOrigin(0.5);
 
         // 계속하기 (Resume) 버튼
-        const resumeBtn = this.add.text(0, -10, '[ 계속하기 ]', {
+        const resumeBtn = this.add.text(0, -10, LanguageData.getText('resume'), {
             fontSize: '20px',
             fill: '#00ff00'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -72,7 +69,7 @@ export default class UIScene extends Phaser.Scene {
         });
 
         // 메인 메뉴로 이동 버튼
-        const mainBtn = this.add.text(0, 40, '[ 메인 메뉴로 ]', {
+        const mainBtn = this.add.text(0, 40, LanguageData.getText('main_menu'), {
             fontSize: '20px',
             fill: '#ff4444'
         }).setOrigin(0.5).setInteractive({ useHandCursor: true });

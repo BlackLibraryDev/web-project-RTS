@@ -3,6 +3,7 @@ import PreloadScene from './preload.js';
 import MainMenuScene from './mainMenu.js';
 import GameScene from './gameScene.js';
 import UIScene from './UIscene.js';
+import metaMap from './metaMap.js';
 
 // src/main.js
 const config = {
@@ -21,7 +22,7 @@ const config = {
             debug: false
         }
     },
-    scene: [PreloadScene, MainMenuScene, GameScene, UIScene]
+    scene: [PreloadScene, MainMenuScene, GameScene, UIScene, metaMap] // metaMap 씬 추가
 };
 
 const game = new Phaser.Game(config);
