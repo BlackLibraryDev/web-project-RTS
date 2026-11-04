@@ -3,13 +3,14 @@ export const HEX_SIZE = 72; // 타일 반지름(px)
 
 // 지형 정의 (이동 비용, 색상 등)
 export const TERRAIN_TYPES = {
-    EMPTY: { id: 0, name: 'empty', color: 0x000000, moveCost: 1 },
-    WATER: { id: 1, name: 'water', color: 0x3388cc, moveCost: 2 },
-    RIVER: { id: 2, name: 'River', color: 0x3388ff, moveCost: 2 },
-    GRASS: { id: 3, name: '초원', color: 0x55aa55, moveCost: 1 },
-    MOUNTAIN: { id: 4, name: '산', color: 0x885522, moveCost: 3 },
-    ROAD: { id: 11, name: '도로', color: 0xddccaa, moveCost: 0.5 },
-    BUILDING: { id: 12, name: '건물', color: 0xcc3333, moveCost: 1 }
+    FOG: {id:-1, name:'fog', color:0x333333, moveCost:1, isWalkable: true},
+    EMPTY: { id: 0, name: 'empty', color: 0x000000, moveCost: 1 ,isWalkable: false},
+    WATER: { id: 1, name: 'water', color: 0x3388cc, moveCost: 2 ,isWalkable: false},
+    RIVER: { id: 2, name: 'River', color: 0x3388ff, moveCost: 2 ,isWalkable: false},
+    GRASS: { id: 3, name: '초원', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
+    MOUNTAIN: { id: 4, name: '산', color: 0x885522, moveCost: 5 ,isWalkable: true},
+    ROAD: { id: 11, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
+    BUILDING: { id: 12, name: '건물', color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
 
 export class HexTile extends Phaser.GameObjects.Container {
@@ -27,7 +28,7 @@ export class HexTile extends Phaser.GameObjects.Container {
         this.add(this.bgGraphics);
 
         // 2. 타일 상단 텍스트 (좌표 또는 건물/지형 이름 표시)
-        this.label = scene.add.text(0, 0, `${q},${r}`, {
+        this.label = scene.add.text(0, 0, `${r},${q}`, {
             fontSize: '14px',
             fill: '#ffffff'
         }).setOrigin(0.5);
@@ -42,8 +43,8 @@ export class HexTile extends Phaser.GameObjects.Container {
         this.on('pointerdown', () => {
 
             //임시로 씬의 mapNumber를 참조하여 지형 변경
-            this.terrain = Object.values(TERRAIN_TYPES).find(t => t.id === this.scene.mapNumber) || TERRAIN_TYPES.EMPTY;
-            this.drawHexagon(this.terrain.color);
+            //this.terrain = Object.values(TERRAIN_TYPES).find(t => t.id === this.scene.mapNumber) || TERRAIN_TYPES.EMPTY;
+            //this.drawHexagon(this.terrain.color);
             
             //console.log(this.scene.mapNumber);
             //console.log(`(${this.q}, ${this.r}) | 지형: ${this.terrain.name}`);

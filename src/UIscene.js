@@ -78,6 +78,7 @@ export default class UIScene extends Phaser.Scene {
             // GameScene과 UIScene을 모두 멈추고 MainMenuScene으로 이동
             this.scene.stop('GameScene');
             this.scene.stop('UIScene');
+            this.scene.stop('metaMap');
             this.scene.start('MainMenuScene');
         });
 

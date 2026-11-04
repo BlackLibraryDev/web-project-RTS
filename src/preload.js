@@ -11,6 +11,8 @@ export default class PreloadScene extends Phaser.Scene {
         // 1. TSV 파일을 텍스트 형식으로 로드 (경로는 assets에 두는 것 권장)
         this.load.text('translations', 'assets/data/translations.tsv');
 
+
+        this.load.spritesheet('unit_commandVan', 'assets/commandVan.png', { frameWidth: 256 , frameHeight: 256 });
         GameData.load();
         // 에셋 로드 코드...
     }
@@ -26,7 +28,13 @@ export default class PreloadScene extends Phaser.Scene {
         const savedLang = localStorage.getItem('game_language') || 'ko';
         LanguageData.setLanguage(savedLang);
 
-        
+        this.anims.create({
+            key: 'unit_commandVan_idle',
+            frames: this.anims.generateFrameNumbers('unit_commandVan', { start: 0, end: 3 }),
+            frameRate: 6,
+            repeat:-1
+        });
+
         this.scene.start('MainMenuScene');
     }
 }
