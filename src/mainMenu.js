@@ -19,7 +19,7 @@ export default class MainMenuScene extends Phaser.Scene {
         });
         
         //빌드
-        const build ='build 20261010-1'
+        const build = `build: ${window.GAME_VERSION}`
         
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
