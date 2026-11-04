@@ -8,7 +8,7 @@ export const TERRAIN_TYPES = {
     WATER: { id: 1, name: 'water', color: 0x3388cc, moveCost: 2 ,isWalkable: false},
     RIVER: { id: 2, name: 'River', color: 0x3388ff, moveCost: 2 ,isWalkable: false},
     GRASS: { id: 3, name: '초원', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
-    MOUNTAIN: { id: 4, name: '산', color: 0x885522, moveCost: 3 ,isWalkable: true},
+    MOUNTAIN: { id: 4, name: '산', color: 0x885522, moveCost: 5 ,isWalkable: true},
     ROAD: { id: 11, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
     BUILDING: { id: 12, name: '건물', color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
