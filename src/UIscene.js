@@ -38,33 +38,94 @@ export default class UIScene extends Phaser.Scene {
         gameScene.events.on(GameEvents.TOGGLE_PAUSE, (isPaused) => {
             this.pauseMenuContainer.setVisible(isPaused);
         }, this);
-        
+
         
     }
     make_tileInfo(){
         this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2)
-
+        const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
         const startX = 30-this.scale.width/2;
         const startY = 40-this.scale.height/2;
-        const menuBg = this.add.rectangle(startX+150,0,300,this.scale.height-40,0x000000,0.7).setStrokeStyle(2,0xffffff);
+        const menuBg = this.add.rectangle(startX+150,0,300,this.scale.height-40,0x000000,0.7).setStrokeStyle(2,0xffffff)
+        .setInteractive(); // 뒤쪽 인게임 클릭 차단;
 
-        const titleTxt = this.add.text(startX+20,startY, 'title' ,{
-            fontSize: '28px',
-            fill: '#ffffff'
-         }).setOrigin(0);
+        const titleTxt = this.add.text(startX+20,startY, 'title' ,fontStyle).setOrigin(0);
+        const facilityBg = this.add.rectangle(startX+10, startY+40, 280,400, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        const facilityTxt = this.add.text(startX+30, -270, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
 
+        const garrisonBg = this.add.rectangle(startX+10,startY+450,280,200, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+         const garrisonTxt = this.add.text(startX+30, 140, LanguageData.getText('garrison') ,fontStyle).setOrigin(0);
+
+         const facilityList = [];
+         const garrisonList = [];
         this.tileInfoContainer.items ={
             titleText :titleTxt,
+            facilityList: facilityList,
+            garrisonList: garrisonList,
+            startX: startX,
+            startY: startY
         }
-        this.tileInfoContainer.add([menuBg, titleTxt]);
+        this.tileInfoContainer.add([menuBg, titleTxt ,facilityBg, facilityTxt, garrisonBg , garrisonTxt]);
 
        // this.tileInfoContainer.setVisible(false);//기본값 안보이게
+    }
+    make_tileInfoContainer(data, startX, startY){
+        const container = this.add.container(startX,startY);
+        const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '16px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
+            
+        const bg = this.add.rectangle(0,0, 270,60, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        const nameTxt = this.add.text(40,5, LanguageData.getText(`${data.name}`), fontStyle).setOrigin(0).setFontSize(20);
+
+        let text = `${data.type} ${data.resource? ': '+data.resource :''}`
+        const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
+
+        const icon = this.add.image(4,12,'icon').setOrigin(0)
+        container.add([bg,nameTxt,infoTxt,icon]);
+        return container;
+    }
+
+
+    make_tileInfoList(tileData ){
+        const items = this.tileInfoContainer.items;
+        for(let i = 0; i<items.facilityList.length; i++){
+            this.tileInfoContainer.remove( items.facilityList[i], true);
+            items.facilityList[i].destroy();
+        }
+        items.facilityList = [];
+        
+        for(let i= 0; i<tileData.facility.length ; i++){
+
+            const data = tileData.facility[i];
+
+            const container = this.make_tileInfoContainer(data, items.startX +15 ,items.startY +i*70 +85);
+            
+            items.facilityList.push(container);
+            this.tileInfoContainer.add(container);
+        
+        }
+        const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.startX+15, items.startY + tileData.facility.length*70 +85);
+        items.facilityList.push(addFacilityBt);
+        this.tileInfoContainer.add(addFacilityBt);
+        
+
+
     }
     setTileInfo(tileData){
         this.tileInfoContainer.setVisible(true);
         const items = this.tileInfoContainer.items;
         if(tileData.explored){
-            items.titleText.setText( `${tileData.name} (${tileData.r},${tileData.q})` );
+            items.titleText.setText( `${tileData.name} (${tileData.q},${tileData.r})` );
+            this.make_tileInfoList( tileData);
         }else{
             //미탐험지역
             items.titleText.setText(`미탐험지역`)

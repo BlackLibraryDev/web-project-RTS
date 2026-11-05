@@ -1,6 +1,6 @@
 import { LanguageData } from './translate.js';
 
-import { HEX_SIZE , HexTile, TERRAIN_TYPES } from './HexTile.js';
+import { HEX_SIZE , HexTile, TERRAIN_TYPES , Facility } from './HexTile.js';
 import { Unit } from './Unit.js';
 import { getHexLine } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
@@ -23,11 +23,11 @@ export default class metaMap extends Phaser.Scene {
         this.mapGrid = [
             [0, 3, 3, 1, 3, 4, 3, 3],
             [0, 3, 1, 3, 4, 3, 3, 3],
-            [3, 3, 1, 3, 3, 3, 3, 0],
-            [3, 3, 1, 2, 2, 3, 0, 0],
-            [3, 3, 3, 2, 2, 3, 0, 0],
-            [0, 3, 3, 3, 3, 3, 0, 0],
-            [0, 3, 3, 3, 3, 0, 0, 0]
+            [3, 3, 1, 3, 3, 3, 3, 4],
+            [3, 3, 1, 1, 1, 3, 4, 2],
+            [3, 3, 3, 1, 1, 3, 2, 2],
+            [0, 3, 3, 3, 3, 3, 2, 0],
+            [0, 2, 2, 2, 3, 0, 2, 0]
         ];
         this.mapDatas = [];
         for(let r = 0; r < this.mapGrid.length; r++) {
@@ -35,8 +35,22 @@ export default class metaMap extends Phaser.Scene {
             for(let q = 0; q < this.mapGrid[r].length; q++) {
                 const terrainId = this.mapGrid[r][q];
                 const terrainType = Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY;
+                let facilityList = [];
 
-                this.mapDatas[r][q] = { id: terrainId , type: terrainType, name:terrainType.name, q:q, r:r, explored:false, facility:[] };
+                if(terrainType.name=='redwood' || terrainType.name=='mountain'){
+                    facilityList.push( Facility.redwood)
+                }
+
+                if(terrainType.name=='water'){
+                    facilityList.push( Facility.water )
+                }
+                if(terrainType.name=='field'){
+                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment)
+                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse)
+                    if(Math.random()< 0.3)  facilityList.push( Facility.Well)
+                    if(Math.random()< 0.3)  facilityList.push( Facility.JunkMine)
+                }
+                this.mapDatas[r][q] = { id: terrainId , type: terrainType, name:terrainType.name, q:q, r:r, explored:false, facility:facilityList };
             }
         }
         
@@ -85,7 +99,7 @@ export default class metaMap extends Phaser.Scene {
             });
         });
         this.events.on('movePoint', (pos) =>{
-            console.log(`도착한 타일: ${pos.q} ${pos.r}`)
+            console.log(`도착한 타일: ${pos.r} ${pos.q}`)
             this.hexTileFogVisible( pos.r, pos.q);
 
             //uiScene.setTileInfo(this.mapDatas[pos.r][pos.q])

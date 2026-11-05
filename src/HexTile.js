@@ -6,12 +6,24 @@ export const TERRAIN_TYPES = {
     FOG: {id:-1, name:'fog', color:0x333333, moveCost:1, isWalkable: true},
     EMPTY: { id: 0, name: 'empty', color: 0x000000, moveCost: 1 ,isWalkable: false},
     WATER: { id: 1, name: 'water', color: 0x3388cc, moveCost: 2 ,isWalkable: false},
-    RIVER: { id: 2, name: 'River', color: 0x3388ff, moveCost: 2 ,isWalkable: false},
-    GRASS: { id: 3, name: '초원', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
-    MOUNTAIN: { id: 4, name: '산', color: 0x885522, moveCost: 5 ,isWalkable: true},
+    REDWOOD: { id: 2, name: 'redwood', color: 0xf3572c, moveCost: 2 ,isWalkable: true},
+    GRASS: { id: 3, name: 'field', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
+    MOUNTAIN: { id: 4, name: 'mountain', color: 0x885522, moveCost: 5 ,isWalkable: true},
     ROAD: { id: 11, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
     BUILDING: { id: 12, name: '건물', color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
+
+export const Facility={
+    redwood:{name:'redwood',        type:'resource', resource:'wood'},
+    water:{name:'water',            type:'resource', resource:'water'},
+    WaterPump:{name:'waterPump',    type:'', resource:'water'},
+    Well:{name:'well',              type:'storage', resource:'water'},
+    GasStation:{name:'gasStation',  type:'storage', resource:'gas'},
+    GasTank:{name:'gasStation',     type:'storage', resource:'gas'},
+    JunkMine:{name:'junkMine',      type:'mine', resource:'misc'},
+    Apartment:{name:'apartment',            type:'house'},
+    BoardingHouse:{name:'boardingHouse',    type:'house'}
+}
 
 export class HexTile extends Phaser.GameObjects.Container {
     constructor(scene, x, y, q, r, terrainType) {
@@ -28,7 +40,7 @@ export class HexTile extends Phaser.GameObjects.Container {
         this.add(this.bgGraphics);
 
         // 2. 타일 상단 텍스트 (좌표 또는 건물/지형 이름 표시)
-        this.label = scene.add.text(0, 0, `${r},${q}`, {
+        this.label = scene.add.text(0, 0, `${q},${r}`, {
             fontSize: '14px',
             fill: '#ffffff'
         }).setOrigin(0.5);

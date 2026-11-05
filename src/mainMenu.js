@@ -7,10 +7,10 @@ export default class MainMenuScene extends Phaser.Scene {
     }
 
     create() {
-        const titleText = this.add.text(400, 200, LanguageData.getText('game_title'), { fontSize: '48px', fill: '#fff' })
+        const titleText = this.add.text(400, 200, LanguageData.getText('game_title'), { fontSize: '48px', fill: '#fff' ,padding:{ x: 2, y: 2 }})
             .setOrigin(0.5);
 
-        const startButton = this.add.text(400, 300, LanguageData.getText('btn_start'), { fontSize: '32px', fill: '#0f0' })
+        const startButton = this.add.text(400, 300, LanguageData.getText('btn_start'), { fontSize: '32px', fill: '#0f0' ,padding:{ x: 2, y: 2 } })
             .setOrigin(0.5)
             .setInteractive({ useHandCursor: true });
 
