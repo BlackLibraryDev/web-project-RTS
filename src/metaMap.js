@@ -4,6 +4,7 @@ import { HEX_SIZE , HexTile, TERRAIN_TYPES } from './HexTile.js';
 import { Unit } from './Unit.js';
 import { getHexLine } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
+import UIScene from './UIscene.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -18,7 +19,7 @@ export default class metaMap extends Phaser.Scene {
     }
 
     create() {
-        
+         const uiScene = this.scene.get('UIScene');
         this.mapGrid = [
             [0, 3, 3, 1, 3, 4, 3, 3],
             [0, 3, 1, 3, 4, 3, 3, 3],
@@ -35,16 +36,15 @@ export default class metaMap extends Phaser.Scene {
                 const terrainId = this.mapGrid[r][q];
                 const terrainType = Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY;
 
-                this.mapDatas[r][q] = { id: terrainId , type: terrainType, explored:false, facility:[] };
+                this.mapDatas[r][q] = { id: terrainId , type: terrainType, name:terrainType.name, q:q, r:r, explored:false, facility:[] };
             }
         }
         
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
         const randomQ = Math.floor(Math.random() * this.mapGrid[0].length);
         const randomR = Math.floor(Math.random() * this.mapGrid.length);
-        this.hexTileSightVisible(randomR, randomQ);
+        this.hexTileFogVisible(randomR, randomQ);
 
-       // this.player = this.drawObject({ tag: 'unit_commandVan', q: randomQ, r: randomR });
 
         // 2. 맵 데이터 바탕으로 인스턴스 배치
         this.generateHexMapFromGrid(this.mapDatas);
@@ -57,8 +57,11 @@ export default class metaMap extends Phaser.Scene {
         
         // 2. 타일 클릭 이벤트 수신
         this.events.on('tileClicked', (clickedTile) => {
-
+            console.log(`클릭한 타일: ${clickedTile.terrain.name} (${clickedTile.r}, ${clickedTile.q})`)
+            uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
             
+            if(this.player ==null) return; 
+
             const startQ = this.player.q;
             const startR = this.player.r;
 
@@ -73,26 +76,32 @@ export default class metaMap extends Phaser.Scene {
             if (this.player.isMoving) {
                 this.player.stopMovement();
             }
-            console.log(`이동 경로 타일 개수: ${path.length - 1}칸`);
+            //console.log(`이동 경로 타일 개수: ${path.length - 1}칸`);
 
             // 유닛 이동 실행
             this.player.moveAlongPath(path, () => {
+                uiScene.setTileInfo(this.mapDatas[this.player.r][this.player.q])
                 console.log('이동 완료!');
             });
         });
         this.events.on('movePoint', (pos) =>{
             console.log(`도착한 타일: ${pos.q} ${pos.r}`)
-            this.hexTileSightVisible( pos.r, pos.q);
+            this.hexTileFogVisible( pos.r, pos.q);
+
+            //uiScene.setTileInfo(this.mapDatas[pos.r][pos.q])
+            
         });
 
         this.events.once('shutdown', () => {
-            
+            this.events.off('tileClicked');
+            this.events.off('movePoint');
+            console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
     }
-    hexTileSightVisible( randomR, randomQ) {
+    hexTileFogVisible( randomR, randomQ) {
         //주변도 밝히기
         this.mapDatas[randomR][randomQ].explored = true;
-        console.log(`(${randomR}, ${randomQ}) | 지형: ${this.mapDatas[randomR][randomQ].type.name}`);
+        //console.log(`(${randomR}, ${randomQ}) | 지형: ${this.mapDatas[randomR][randomQ].type.name}`);
         if(randomR > 0) this.mapDatas[randomR-1][randomQ].explored = true;
         if(randomR < this.mapGrid.length-1) this.mapDatas[randomR+1][randomQ].explored = true;
         if(randomQ > 0) this.mapDatas[randomR][randomQ-1].explored = true;
@@ -101,19 +110,7 @@ export default class metaMap extends Phaser.Scene {
         if(randomR < this.mapGrid.length-1 && randomQ > 0) this.mapDatas[randomR+1][randomQ-1].explored = true;
         this.renderMapFog(this.mapDatas);
     }
-    drawObject(object) {
-        // object: { type: 'building' | 'unit', q, r, ... }
-        const pos = this.axialToPixel(object.q, object.r);
-        const sprite = this.add.sprite(pos.x, pos.y, object.tag);
-
-        sprite.setOrigin(0.5,0.7).setDepth(10).setScale(0.5);
-        sprite.play(`${object.tag}_idle`)
-        // 필요에 따라 추가 속성 설정
-        sprite.r = object.r;
-        sprite.q = object.q;
-        sprite.rawData= object;
-        return sprite;
-    }
+  
 
     // Axial 좌표 (q, r) -> 화면 픽셀 좌표 (x, y) 변환식
     axialToPixel(q, r) {

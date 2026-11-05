@@ -30,13 +30,45 @@ export default class UIScene extends Phaser.Scene {
         // --------------------------------------------------
         this.make_pauseManuContainer();
 
+        this.make_tileInfo();
+
         // --------------------------------------------------
         // 3. GameScene 이벤트 수신
         // --------------------------------------------------
         gameScene.events.on(GameEvents.TOGGLE_PAUSE, (isPaused) => {
             this.pauseMenuContainer.setVisible(isPaused);
         }, this);
+        
+        
+    }
+    make_tileInfo(){
+        this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2)
 
+        const startX = 30-this.scale.width/2;
+        const startY = 40-this.scale.height/2;
+        const menuBg = this.add.rectangle(startX+150,0,300,this.scale.height-40,0x000000,0.7).setStrokeStyle(2,0xffffff);
+
+        const titleTxt = this.add.text(startX+20,startY, 'title' ,{
+            fontSize: '28px',
+            fill: '#ffffff'
+         }).setOrigin(0);
+
+        this.tileInfoContainer.items ={
+            titleText :titleTxt,
+        }
+        this.tileInfoContainer.add([menuBg, titleTxt]);
+
+       // this.tileInfoContainer.setVisible(false);//기본값 안보이게
+    }
+    setTileInfo(tileData){
+        this.tileInfoContainer.setVisible(true);
+        const items = this.tileInfoContainer.items;
+        if(tileData.explored){
+            items.titleText.setText( `${tileData.name} (${tileData.r},${tileData.q})` );
+        }else{
+            //미탐험지역
+            items.titleText.setText(`미탐험지역`)
+        }
         
     }
 
@@ -79,6 +111,7 @@ export default class UIScene extends Phaser.Scene {
             this.scene.stop('GameScene');
             this.scene.stop('UIScene');
             this.scene.stop('metaMap');
+            
             this.scene.start('MainMenuScene');
         });
 
