@@ -25,14 +25,20 @@ export class Unit extends Phaser.GameObjects.Container {
 
     // 경로(타일 배열)를 받아 순차적으로 한 칸씩 이동하는 메서드
     moveAlongPath(path, onComplete) {
-        if (this.isMoving || path.length <= 1) return;
+        // 이미 이동 중이라면 기존 이동을 강제 중단하고 새 경로로 갱신하거나 무시할 수 있습니다.
+        if (this.isMoving) {
+            this.stopMovement();
+        }
         
+        if (path.length <= 1) return;
+
         this.isMoving = true;
-        
-        // 첫 번째 요소는 현재 위치이므로 제외하고 다음 칸부터 순회
-        path.shift(); 
+        path.shift(); // 현재 위치 제외
 
         const stepNext = () => {
+            // 강제 중단 등으로 플래그가 꺼졌다면 즉시 탈출
+            if (!this.isMoving) return;
+
             if (path.length === 0) {
                 this.isMoving = false;
                 if (onComplete) onComplete();
@@ -42,26 +48,39 @@ export class Unit extends Phaser.GameObjects.Container {
             const nextTileCoord = path.shift();
             this.q = nextTileCoord.q;
             this.r = nextTileCoord.r;
-            
-            // 다음 타일의 픽셀 좌표 계산
-            const targetPos = axialToPixel(this.q, this.r, this.startX, this.startY);
-            
 
-            // Phaser Tween을 사용해 부드럽게 이동
-            this.scene.tweens.add({
+            const targetPos = axialToPixel(this.q, this.r, this.startX, this.startY);
+
+            // ⭕ 현재 진행 중인 트윈 객체를 보관
+            this.currentTween = this.scene.tweens.add({
                 targets: this,
                 x: targetPos.x,
                 y: targetPos.y,
-                duration: 500, // 한 칸 이동하는 데 걸리는 시간 (ms)
+                duration: 500,
                 ease: 'Linear',
                 onComplete: () => {
-                    //console.log(`도착점 : ${this.r} ${this.q}`)
                     this.scene.events.emit('movePoint', {r:this.r, q:this.q })
-                    stepNext(); // 다음 칸으로 재귀 호출
+                    this.currentTween = null;
+                    stepNext();
                 }
             });
         };
 
         stepNext();
     }
+
+    // 🛑 이동 강제 중단 메서드
+    stopMovement() {
+        if (!this.isMoving) return;
+
+        // 1. 현재 실행 중인 Tween이 있다면 즉시 정지 및 제거
+        if (this.currentTween) {
+            this.currentTween.stop();
+            this.currentTween = null;
+        }
+
+        this.isMoving = false;
+        console.log(`유닛 이동 중단됨 (현재 위치: q=${this.q}, r=${this.r})`);
+    }
+    
 }

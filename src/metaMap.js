@@ -57,12 +57,21 @@ export default class metaMap extends Phaser.Scene {
         
         // 2. 타일 클릭 이벤트 수신
         this.events.on('tileClicked', (clickedTile) => {
+
+            
+            const startQ = this.player.q;
+            const startR = this.player.r;
+
             // 1. A* 길찾기로 유효한 최적 경로 탐색 (물/장애물 회피)
-            const path = findHexPath(this.player.q, this.player.r, clickedTile.q, clickedTile.r, this.tileMap);
+            const path = findHexPath(startQ, startR, clickedTile.q, clickedTile.r, this.tileMap);
 
             if (path.length === 0) {
                 console.log('이동할 수 없는 경로입니다! (물 또는 장애물)');
                 return;
+            }
+            // 1. 새로운 목적지를 누르면 기존 이동을 즉시 중단
+            if (this.player.isMoving) {
+                this.player.stopMovement();
             }
             console.log(`이동 경로 타일 개수: ${path.length - 1}칸`);
 
