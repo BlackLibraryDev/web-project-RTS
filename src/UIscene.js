@@ -55,11 +55,16 @@ export default class UIScene extends Phaser.Scene {
         .setInteractive(); // 뒤쪽 인게임 클릭 차단;
 
         const titleTxt = this.add.text(startX+20,startY, 'title' ,fontStyle).setOrigin(0);
-        const facilityBg = this.add.rectangle(startX+10, startY+40, 280,400, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
-        const facilityTxt = this.add.text(startX+30, -270, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
 
-        const garrisonBg = this.add.rectangle(startX+10,startY+450,280,200, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
-         const garrisonTxt = this.add.text(startX+30, 140, LanguageData.getText('garrison') ,fontStyle).setOrigin(0);
+        const facilityContainer = this.add.container(startX, startY+40);
+        const facilityBg = this.add.rectangle(10, 0, 280,400, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        const facilityTxt = this.add.text(20, 10, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
+        facilityContainer.add([facilityBg,facilityTxt]);
+
+        const garrisonContainer = this.add.container(startX,startY+450);
+        const garrisonBg = this.add.rectangle(10,0,280,200, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+         const garrisonTxt = this.add.text(20, 10, LanguageData.getText('garrison') ,fontStyle).setOrigin(0);
+        garrisonContainer.add([garrisonBg,garrisonTxt]);
 
          const facilityList = [];
          const garrisonList = [];
@@ -67,14 +72,16 @@ export default class UIScene extends Phaser.Scene {
             titleText :titleTxt,
             facilityList: facilityList,
             garrisonList: garrisonList,
+            facilityContainer: facilityContainer,
+            garrisonContainer: garrisonContainer,
             startX: startX,
             startY: startY
         }
-        this.tileInfoContainer.add([menuBg, titleTxt ,facilityBg, facilityTxt, garrisonBg , garrisonTxt]);
+        this.tileInfoContainer.add([menuBg, titleTxt ,facilityContainer, garrisonContainer]);
 
        // this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
-    make_tileInfoContainer(data, startX, startY){
+    make_tileInfoContainer(data, startX, startY, bgColor =null){
         const container = this.add.container(startX,startY);
         const fontStyle ={
             fontFamily:'Arial',
@@ -82,53 +89,84 @@ export default class UIScene extends Phaser.Scene {
             fill: '#ffffff',
             padding:{ x: 2, y: 2 }
         }
-            
-        const bg = this.add.rectangle(0,0, 270,60, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        const bgcolor = data.team? ( data.team >1 ? 0xff4f4f :  0x2cb9ff  ) : ( 0x000000 ); 
+        const bg = this.add.rectangle(0,0, 270,60, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         const nameTxt = this.add.text(40,5, LanguageData.getText(`${data.name}`), fontStyle).setOrigin(0).setFontSize(20);
 
         let text = `${data.type} ${data.resource? ': '+data.resource :''}`
         const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
 
         const icon = this.add.image(4,12,'icon').setOrigin(0)
+
         container.add([bg,nameTxt,infoTxt,icon]);
         return container;
     }
 
+    clearTileInfoList(){
+         const items = this.tileInfoContainer.items;
 
-    make_tileInfoList(tileData ){
-        const items = this.tileInfoContainer.items;
         for(let i = 0; i<items.facilityList.length; i++){
             this.tileInfoContainer.remove( items.facilityList[i], true);
             items.facilityList[i].destroy();
         }
         items.facilityList = [];
-        
-        for(let i= 0; i<tileData.facility.length ; i++){
+        items.facilityContainer.setVisible(false);
 
-            const data = tileData.facility[i];
-
-            const container = this.make_tileInfoContainer(data, items.startX +15 ,items.startY +i*70 +85);
-            
-            items.facilityList.push(container);
-            this.tileInfoContainer.add(container);
-        
+        for(let i = 0; i<items.garrisonList.length; i++){
+            this.tileInfoContainer.remove( items.garrisonList[i], true);
+            items.garrisonList[i].destroy();
         }
-        const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.startX+15, items.startY + tileData.facility.length*70 +85);
-        items.facilityList.push(addFacilityBt);
-        this.tileInfoContainer.add(addFacilityBt);
-        
+        items.garrisonList = [];
+        items.garrisonContainer.setVisible(false);
+    }
+    renderTileInfoList(tileData ){
+        this.clearTileInfoList();
+        const items = this.tileInfoContainer.items;
 
+       if(tileData.facility.length>=0){
+            items.facilityContainer.setVisible(true);
+            for(let i= 0; i<tileData.facility.length ; i++){
+
+                const data = tileData.facility[i];
+
+                const container = this.make_tileInfoContainer(data, items.facilityContainer.x +15 ,items.facilityContainer.y +i*70 +45);
+                
+                items.facilityList.push(container);
+                this.tileInfoContainer.add(container);
+            
+            }
+            const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.facilityContainer.x+15, items.startY + tileData.facility.length*70 +85,
+                 0x43c563);
+            items.facilityList.push(addFacilityBt);
+            this.tileInfoContainer.add(addFacilityBt);
+            
+        }
+        if(tileData.garrison.length>=0){
+            items.garrisonContainer.setVisible(true);
+            for(let i= 0; i<tileData.garrison.length ; i++){
+
+                const data = tileData.garrison[i];
+
+                const container = this.make_tileInfoContainer(data, items.garrisonContainer.x +15 ,items.garrisonContainer.y +i*70 +45);
+                
+                items.garrisonList.push(container);
+                this.tileInfoContainer.add(container);
+            
+            }
+        }
 
     }
     setTileInfo(tileData){
         this.tileInfoContainer.setVisible(true);
         const items = this.tileInfoContainer.items;
-        if(tileData.explored){
-            items.titleText.setText( `${tileData.name} (${tileData.q},${tileData.r})` );
-            this.make_tileInfoList( tileData);
+        if(tileData.explored && tileData.name != 'empty'){
+            console.log(tileData.team)
+            items.titleText.setText( `${tileData.name} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
+            this.renderTileInfoList( tileData);
         }else{
             //미탐험지역
             items.titleText.setText(`미탐험지역`)
+            this.clearTileInfoList();
         }
         
     }
@@ -136,10 +174,16 @@ export default class UIScene extends Phaser.Scene {
     make_pauseManuContainer() {
          this.pauseMenuContainer = this.add.container(this.scale.width / 2, this.scale.height / 2);
         this.pauseMenuContainer.setVisible(false);
+        this.pauseMenuContainer.setDepth(100);
 
         // 어두운 반투명 배경 레이어 (화면 전체 덮기)
         const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.7)
-            .setInteractive(); // 뒤쪽 인게임 클릭 차단
+        .setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => {
+            // UIScene -> GameScene으로 재개 이벤트 발송
+            this.events.emit(GameEvents.GAME_RESUMED);
+        }); 
+//            .setInteractive(); // 뒤쪽 인게임 클릭 차단
 
         // 팝업 박스
         const menuBg = this.add.rectangle(0, 0, 320, 240, 0x222222, 0.95)

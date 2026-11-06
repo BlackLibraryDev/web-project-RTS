@@ -36,6 +36,8 @@ export default class metaMap extends Phaser.Scene {
                 const terrainId = this.mapGrid[r][q];
                 const terrainType = Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY;
                 let facilityList = [];
+                let garrisonList = [];
+                let teamNum = 0;
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
                     facilityList.push( Facility.redwood)
@@ -49,8 +51,25 @@ export default class metaMap extends Phaser.Scene {
                     if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse)
                     if(Math.random()< 0.3)  facilityList.push( Facility.Well)
                     if(Math.random()< 0.3)  facilityList.push( Facility.JunkMine)
+                    
+                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'scout', type:'infantry', amount:1})}
+                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'anti-drone team', type:'infantry', amount:1})}
+                    if(Math.random()<0.2)  {teamNum=2;  garrisonList.push( {team:2, name:'rifleman', type:'infantry', amount:1})}
                 }
-                this.mapDatas[r][q] = { id: terrainId , type: terrainType, name:terrainType.name, q:q, r:r, explored:false, facility:facilityList };
+
+                
+
+                this.mapDatas[r][q] = { 
+                    id: terrainId , 
+                    type: terrainType, 
+                    name:terrainType.name, 
+                    team:teamNum,
+                    q:q, 
+                    r:r,
+                    explored:false, 
+                    facility:facilityList, 
+                    garrison:garrisonList
+                };
             }
         }
         
