@@ -135,10 +135,13 @@ export default class UIScene extends Phaser.Scene {
                 this.tileInfoContainer.add(container);
             
             }
-            const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.facilityContainer.x+15, items.startY + tileData.facility.length*70 +85,
-                 0x43c563);
-            items.facilityList.push(addFacilityBt);
-            this.tileInfoContainer.add(addFacilityBt);
+            if(tileData.team<2){
+                 const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.facilityContainer.x+15, items.startY + tileData.facility.length*70 +85,
+                    0x43c563);
+                items.facilityList.push(addFacilityBt);
+                this.tileInfoContainer.add(addFacilityBt);
+            }
+           
             
         }
         if(tileData.garrison.length>=0){
@@ -160,8 +163,8 @@ export default class UIScene extends Phaser.Scene {
         this.tileInfoContainer.setVisible(true);
         const items = this.tileInfoContainer.items;
         if(tileData.explored && tileData.name != 'empty'){
-            console.log(tileData.team)
-            items.titleText.setText( `${tileData.name} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
+            items.titleText.setText( 
+                `${tileData.name} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
         }else{
             //미탐험지역

@@ -169,12 +169,14 @@ export default class metaMap extends Phaser.Scene {
                 // 지형 객체 매핑
                 const terrainId = mapdatas[r][q].id;
                 const terrainType = mapdatas[r][q].type;
+                const team = mapdatas[r][q].team;
+                console.log(team)
                 
                 // 화면 위치 계산
                 const pos = this.axialToPixel(q, r);
 
                 // 🔥 HexTile 인스턴스 생성!
-                const tileInstance = new HexTile(this, pos.x, pos.y, q, r, terrainType );
+                const tileInstance = new HexTile(this, pos.x, pos.y, q, r, terrainType, team );
                 
                 // Map에 인스턴스 저장 (q, r 키 사용)
                 this.tileMap.set(`${q},${r}`, tileInstance);

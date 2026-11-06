@@ -26,7 +26,7 @@ export const Facility={
 }
 
 export class HexTile extends Phaser.GameObjects.Container {
-    constructor(scene, x, y, q, r, terrainType) {
+    constructor(scene, x, y, q, r, terrainType, team =0) {
         super(scene, x, y);
 
         this.q = q; // Axial 좌표 Q (열)
@@ -35,9 +35,11 @@ export class HexTile extends Phaser.GameObjects.Container {
         this.isExplored = false; // 탐험 여부 (Fog of War)
 
         // 1. 육각형 배경 그래픽 생성
+        this.teamGraphics = scene.add.graphics();
+
         this.bgGraphics = scene.add.graphics();
-        this.drawHexagon(this.terrain.color);
-        this.add(this.bgGraphics);
+        this.drawHexagon(this.terrain.color, team );
+        this.add([this.bgGraphics, this.teamGraphics]);
 
         // 2. 타일 상단 텍스트 (좌표 또는 건물/지형 이름 표시)
         this.label = scene.add.text(0, 0, `${q},${r}`, {
@@ -90,12 +92,20 @@ export class HexTile extends Phaser.GameObjects.Container {
     }
 
     // 육각형 그리기
-    drawHexagon(color) {
+    drawHexagon(color, team=0 ) {
         const points = this.getHexPoints();
         this.bgGraphics.clear();
         this.bgGraphics.fillStyle(color, 1);
         this.bgGraphics.lineStyle(2, 0x111111, 0.8);
         this.bgGraphics.fillPoints(points, true);
         this.bgGraphics.strokePoints(points, true);
+
+        if(team>0){
+            this.teamGraphics.clear()
+            this.teamGraphics.fillStyle((team >1 ? 0xff4f4f :  0x2cb9ff  ) , 0.7 )
+            //this.teamGraphics.lineStyle(2, (team >1 ? 0xff4f4f :  0x2cb9ff  ), 1);
+            this.teamGraphics.fillPoints(points, true);
+            this.teamGraphics.strokePoints(points, true);
+        }
     }
 }
