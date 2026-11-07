@@ -38,7 +38,7 @@ export class HexTile extends Phaser.GameObjects.Container {
         this.teamGraphics = scene.add.graphics();
 
         this.bgGraphics = scene.add.graphics();
-        this.drawHexagon(this.terrain.color, team );
+        this.drawHexagon(this.terrain, team );
         this.add([this.bgGraphics, this.teamGraphics]);
 
         // 2. 타일 상단 텍스트 (좌표 또는 건물/지형 이름 표시)
@@ -92,17 +92,29 @@ export class HexTile extends Phaser.GameObjects.Container {
     }
 
     // 육각형 그리기
-    drawHexagon(color, team=0 ) {
+    drawHexagon(terrain, team=0 ) {
+        // 1. 지형 데이터에 정의된 textureKey를 사용해 스프라이트 생성
+        // 만약 키가 존재하지 않으면 기본 필드 텍스처로 폴백(Fallback) 처리
+        const textureToUse =`tile_${terrain.name}` ?? 'tile_field';
+        this.tileSprite = this.scene.add.sprite(0, 0, textureToUse);
+        
+        // 2. 스프라이트 크기를 헥스 규격에 맞게 조절 (높이 기준 스케일링)
+        const targetHeight = HEX_SIZE * 2;
+        const scale = targetHeight / this.tileSprite.height;
+        this.tileSprite.setScale(scale);
+
+        this.add(this.tileSprite);
+
         const points = this.getHexPoints();
         this.bgGraphics.clear();
-        this.bgGraphics.fillStyle(color, 1);
+        this.bgGraphics.fillStyle(terrain.color, 0);
         this.bgGraphics.lineStyle(2, 0x111111, 0.8);
         this.bgGraphics.fillPoints(points, true);
         this.bgGraphics.strokePoints(points, true);
-
+      
         if(team>0){
             this.teamGraphics.clear()
-            this.teamGraphics.fillStyle((team >1 ? 0xff4f4f :  0x2cb9ff  ) , 0.7 )
+            this.teamGraphics.fillStyle((team >1 ? 0xff4f4f :  0x2fb9ff  ) , 0.5)
             //this.teamGraphics.lineStyle(2, (team >1 ? 0xff4f4f :  0x2cb9ff  ), 1);
             this.teamGraphics.fillPoints(points, true);
             this.teamGraphics.strokePoints(points, true);

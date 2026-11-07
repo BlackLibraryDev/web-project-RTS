@@ -12,7 +12,7 @@ export const GameOptions = {
 
     // 로컬 스토리지에서 사용자 설정 불러오기
     loadOptions() {
-        return;
+        return;  //나중에 지우기
         const saved = localStorage.getItem('projectRTS_options');
         if (saved) {
             try {

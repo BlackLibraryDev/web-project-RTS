@@ -11,7 +11,13 @@ export default class PreloadScene extends Phaser.Scene {
         // 1. TSV 파일을 텍스트 형식으로 로드 (경로는 assets에 두는 것 권장)
         this.load.text('translations', 'assets/data/translations.tsv');
 
-
+        // 지형별 스프라이트 이미지 로드 (파일명은 자유롭게 지정)
+        this.load.image('tile_fog', 'assets/tiles/fog.png');
+        this.load.image('tile_water', 'assets/tiles/water.png');
+        this.load.image('tile_redwood', 'assets/tiles/redwood.png');
+        this.load.image('tile_field', 'assets/tiles/field.png');
+        this.load.image('tile_mountain', 'assets/tiles/mountain.png');
+        
         this.load.spritesheet('unit_commandVan', 'assets/commandVan.png', { frameWidth: 256 , frameHeight: 256 });
         GameData.load();
         // 에셋 로드 코드...
