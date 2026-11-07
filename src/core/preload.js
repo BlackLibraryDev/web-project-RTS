@@ -1,6 +1,6 @@
 // src/preload.js
 import { GameData } from './data.js';
-import { LanguageData } from './translate.js';
+import { LanguageData } from '../translate.js';
 
 export default class PreloadScene extends Phaser.Scene {
     constructor() {

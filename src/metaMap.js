@@ -1,5 +1,7 @@
 import { LanguageData } from './translate.js';
+import { GameOptions } from './core/option.js';
 
+import { generateRectangularNoiseMap } from './mapGenerator.js';
 import { HEX_SIZE , HexTile, TERRAIN_TYPES , Facility } from './HexTile.js';
 import { Unit } from './Unit.js';
 import { getHexLine } from './hexUtils.js';
@@ -10,15 +12,18 @@ export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
 
 
+
 export default class metaMap extends Phaser.Scene {
     constructor() {
         super({ key: 'metaMap' });
-
+        this.prevDistance = 0; // 이전 프레임의 두 손가락 사이 거리 저장
         this.tileMap = new Map(); // (q, r) 키 기반 타일 인스턴스 저장소
         this.fogMap = new Map();
     }
 
     create() {
+        this.input.addPointer(2); //멀티터치 활성화
+        this.zoomRatio = GameOptions.config.zoomRatio;
          const uiScene = this.scene.get('UIScene');
         this.mapGrid = [
             [0, 3, 3, 1, 3, 4, 3, 3],
@@ -29,6 +34,10 @@ export default class metaMap extends Phaser.Scene {
             [0, 3, 3, 3, 3, 3, 2, 0],
             [0, 2, 2, 2, 3, 0, 2, 0]
         ];
+        const seedName = 'my_explore_world'+ Math.floor(Math.random()*100000)
+       this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
+        console.log(`Random Seed: ${seedName}`);
+
         this.mapDatas = [];
         for(let r = 0; r < this.mapGrid.length; r++) {
             this.mapDatas[r] = [];
@@ -66,7 +75,7 @@ export default class metaMap extends Phaser.Scene {
                     team:teamNum,
                     q:q, 
                     r:r,
-                    explored:false, 
+                    explored: GameOptions.config.debugMode, 
                     facility:facilityList, 
                     garrison:garrisonList
                 };
@@ -74,10 +83,13 @@ export default class metaMap extends Phaser.Scene {
         }
         
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
-        const randomQ = Math.floor(Math.random() * this.mapGrid[0].length);
-        const randomR = Math.floor(Math.random() * this.mapGrid.length);
-        this.hexTileFogVisible(randomR, randomQ);
-
+        const startingPoint = this.randomStartingPoint();
+        this.hexTileFogVisible(startingPoint.r, startingPoint.q);
+        const playerTile = startingPoint.playerTile;
+        playerTile.team =1; 
+        for(let i = 0; i<playerTile.garrison.length ; i++){
+            playerTile.garrison[i].team = 1;
+        }
 
         // 2. 맵 데이터 바탕으로 인스턴스 배치
         this.generateHexMapFromGrid(this.mapDatas);
@@ -86,7 +98,7 @@ export default class metaMap extends Phaser.Scene {
         // 3. 카메라 드래그 이동 설정
         this.setupCameraControls();
 
-        this.player = new Unit(this, { tag: 'unit_commandVan', q: randomQ, r: randomR });
+        this.player ;// = new Unit(this, { tag: 'unit_commandVan', q: randomQ, r: randomR });
         
         // 2. 타일 클릭 이벤트 수신
         this.events.on('tileClicked', (clickedTile) => {
@@ -131,6 +143,24 @@ export default class metaMap extends Phaser.Scene {
             console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
     }
+
+    randomStartingPoint(){
+         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
+         let randomQ =0;
+         let randomR =0;
+         let _playerTile ;
+         while (true){
+            randomQ = Math.floor(Math.random() * this.mapGrid[0].length);
+            randomR = Math.floor(Math.random() * this.mapGrid.length);
+            _playerTile = this.mapDatas[randomR][randomQ];
+            if(_playerTile.id == TERRAIN_TYPES.GRASS.id || _playerTile.id == TERRAIN_TYPES.REDWOOD.id){
+                break;
+            }
+            
+         }
+        return {q:randomQ , r:randomR, playerTile:_playerTile}
+    }
+
     hexTileFogVisible( randomR, randomQ) {
         //주변도 밝히기
         this.mapDatas[randomR][randomQ].explored = true;
@@ -143,7 +173,7 @@ export default class metaMap extends Phaser.Scene {
         if(randomR < this.mapGrid.length-1 && randomQ > 0) this.mapDatas[randomR+1][randomQ-1].explored = true;
         this.renderMapFog(this.mapDatas);
     }
-  
+    
 
     // Axial 좌표 (q, r) -> 화면 픽셀 좌표 (x, y) 변환식
     axialToPixel(q, r) {
@@ -170,7 +200,6 @@ export default class metaMap extends Phaser.Scene {
                 const terrainId = mapdatas[r][q].id;
                 const terrainType = mapdatas[r][q].type;
                 const team = mapdatas[r][q].team;
-                console.log(team)
                 
                 // 화면 위치 계산
                 const pos = this.axialToPixel(q, r);
@@ -214,5 +243,39 @@ export default class metaMap extends Phaser.Scene {
                 this.cameras.main.scrollY -= (pointer.y - pointer.prevPosition.y);
             }
         });
+    }
+    update() {
+        // 두 개의 포인터를 가져옵니다.
+        const pointer1 = this.input.pointer1;
+        const pointer2 = this.input.pointer2;
+
+        // 2. 두 손가락이 모두 화면을 누르고 있을 때만 실행
+        if (pointer1.isDown && pointer2.isDown) {
+            // 현재 두 포인터 사이의 거리를 계산 (Phaser.Math 사용)
+            const currentDistance = Phaser.Math.Distance.Between(
+                pointer1.x, pointer1.y,
+                pointer2.x, pointer2.y
+            );
+
+            // 이전 거리가 기록되어 있다면 (터치를 시작한 직후 프레임이 아니라면)
+            if (this.prevDistance > 0) {
+                // 거리의 변화량을 계산 (확대 시 양수, 축소 시 음수)
+                const distanceDelta = currentDistance - this.prevDistance;
+
+                // 3. 카메라 줌 값 변경 (0.01은 민감도 조절용 가중치)
+                let newZoom = this.cameras.main.zoom + (distanceDelta * this.zoomRatio.ratio);
+
+                // 줌 제한 범위 설정 (최소 0.5배 ~ 최대 3.0배)
+                newZoom = Phaser.Math.Clamp(newZoom, this.zoomRatio.min, this.zoomRatio.max);
+
+                this.cameras.main.setZoom(newZoom);
+            }
+
+            // 현재 거리를 다음 프레임을 위해 저장
+            this.prevDistance = currentDistance;
+        } else {
+            // 두 손가락 중 하나라도 떼어지면 이전 거리 기록을 초기화
+            this.prevDistance = 0;
+        }
     }
 }

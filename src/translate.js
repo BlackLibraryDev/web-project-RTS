@@ -42,7 +42,7 @@ export const LanguageData = {
             }
         }
 
-        console.log('번역 데이터 파싱 완료:', this.dictionary);
+        //console.log('번역 데이터 파싱 완료:', this.dictionary);
     },
 
     setLanguage(lang) {

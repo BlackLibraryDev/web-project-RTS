@@ -9,12 +9,12 @@ export const GameData = {
     },
 
     save() {
-        localStorage.setItem('my_game_data', JSON.stringify(this.saveData));
+        localStorage.setItem('projectRTS_game_data', JSON.stringify(this.saveData));
         console.log('게임 데이터 저장 완료');
     },
 
     load() {
-        const data = localStorage.getItem('my_game_data');
+        const data = localStorage.getItem('projectRTS_game_data');
         if (data) {
             this.saveData = JSON.parse(data);
             console.log('게임 데이터 불러오기 완료');

@@ -1,5 +1,5 @@
 // src/main.js
-import PreloadScene from './preload.js';
+import PreloadScene from './core/preload.js';
 import MainMenuScene from './mainMenu.js';
 import GameScene from './gameScene.js';
 import UIScene from './UIscene.js';

@@ -2,6 +2,8 @@
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
 
+export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
+
 export default class UIScene extends Phaser.Scene {
     constructor() {
         super({ key: 'UIScene' });
@@ -135,8 +137,9 @@ export default class UIScene extends Phaser.Scene {
                 this.tileInfoContainer.add(container);
             
             }
-            if(tileData.team<2){
-                 const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, items.facilityContainer.x+15, items.startY + tileData.facility.length*70 +85,
+            if(tileData.team==1){
+                 const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, 
+                    items.facilityContainer.x+15, items.facilityContainer.y + tileData.facility.length*70 +45,
                     0x43c563);
                 items.facilityList.push(addFacilityBt);
                 this.tileInfoContainer.add(addFacilityBt);
@@ -156,6 +159,14 @@ export default class UIScene extends Phaser.Scene {
                 this.tileInfoContainer.add(container);
             
             }
+            if(tileData.team==1){
+                 const addGarrisonBt = this.make_tileInfoContainer({name:'(add Garrison)', type:''}, 
+                    items.garrisonContainer.x+15, items.garrisonContainer.y + tileData.garrison.length*70 +45,
+                    0x43c563);
+                items.garrisonList.push(addGarrisonBt);
+                this.tileInfoContainer.add(addGarrisonBt);
+            }
+
         }
 
     }
@@ -209,11 +220,7 @@ export default class UIScene extends Phaser.Scene {
         });
 
         // 메인 메뉴로 이동 버튼
-        const mainBtn = this.add.text(0, 40, LanguageData.getText('main_menu'), {
-            fontSize: '20px',
-            fill: '#ff4444'
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
+        const mainBtn = this.makeButton(0,40,160,40,'main_menu');
         mainBtn.on('pointerdown', () => {
             // GameScene과 UIScene을 모두 멈추고 MainMenuScene으로 이동
             this.scene.stop('GameScene');
@@ -225,5 +232,25 @@ export default class UIScene extends Phaser.Scene {
 
         // 컨테이너에 요소 추가
         this.pauseMenuContainer.add([overlay, menuBg, titleText, resumeBtn, mainBtn]);
+    }
+    makeButton(x,y, width,height, text, options={}){
+        const container = this.add.container(x,y).setInteractive({ 
+            hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2,width, height), 
+            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+            useHandCursor: true // 컨테이너에 직접 커서 설정!
+        });;
+         const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '16px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
+        const color = options.color?? 0x000000;
+         const bg = this.add.rectangle(0,0,width,height, color ,1).setStrokeStyle(2,0xffffff).setOrigin(0.5);
+         
+        const nameTxt = this.add.text(0,0, LanguageData.getText(text), fontStyle).setOrigin(0.5);
+
+        container.add([bg, nameTxt]);
+        return container;
     }
 }

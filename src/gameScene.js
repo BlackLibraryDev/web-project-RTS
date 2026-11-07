@@ -1,6 +1,6 @@
 // src/gameScene.js
 import { GameEvents } from './events.js';
-import { GameData } from './data.js';
+import { GameData } from './core/data.js';
 
 
 export default class GameScene extends Phaser.Scene {

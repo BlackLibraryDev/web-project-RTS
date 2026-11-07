@@ -1,0 +1,61 @@
+import Phaser from 'phaser';
+
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super('GameScene');
+        this.prevDistance = 0; // 이전 프레임의 두 손가락 사이 거리 저장
+    }
+
+    create() {
+        // 1. 멀티터치를 활성화 (기본값은 2개 이상의 포인터를 감지하지 못할 수 있음)
+        this.input.addPointer(2);
+
+        // 예시용 배경 생성 (확대/축소를 눈으로 확인하기 위함)
+        this.add.grid(400, 300, 800, 600, 32, 32, 0x004400).setAltFillColor(0x001100);
+        this.add.text(400, 300, '두 손가락으로 줌인/아웃', { fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
+    }
+
+    update() {
+        // 두 개의 포인터를 가져옵니다.
+        const pointer1 = this.input.pointer1;
+        const pointer2 = this.input.pointer2;
+
+        // 2. 두 손가락이 모두 화면을 누르고 있을 때만 실행
+        if (pointer1.isDown && pointer2.isDown) {
+            // 현재 두 포인터 사이의 거리를 계산 (Phaser.Math 사용)
+            const currentDistance = Phaser.Math.Distance.Between(
+                pointer1.x, pointer1.y,
+                pointer2.x, pointer2.y
+            );
+
+            // 이전 거리가 기록되어 있다면 (터치를 시작한 직후 프레임이 아니라면)
+            if (this.prevDistance > 0) {
+                // 거리의 변화량을 계산 (확대 시 양수, 축소 시 음수)
+                const distanceDelta = currentDistance - this.prevDistance;
+
+                // 3. 카메라 줌 값 변경 (0.01은 민감도 조절용 가중치)
+                let newZoom = this.cameras.main.zoom + (distanceDelta * 0.01);
+
+                // 줌 제한 범위 설정 (최소 0.5배 ~ 최대 3.0배)
+                newZoom = Phaser.Math.Clamp(newZoom, 0.5, 3.0);
+
+                this.cameras.main.setZoom(newZoom);
+            }
+
+            // 현재 거리를 다음 프레임을 위해 저장
+            this.prevDistance = currentDistance;
+        } else {
+            // 두 손가락 중 하나라도 떼어지면 이전 거리 기록을 초기화
+            this.prevDistance = 0;
+        }
+    }
+}
+
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: GameScene
+};
+
+const game = new Phaser.Game(config);
