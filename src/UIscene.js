@@ -8,7 +8,7 @@ export default class UIScene extends Phaser.Scene {
     constructor() {
         super({ key: 'UIScene' });
     }
-
+    
     create() {
         const gameScene = this.scene.get('GameScene');
 
@@ -229,15 +229,19 @@ export default class UIScene extends Phaser.Scene {
             
             this.scene.start('MainMenuScene');
         });
-
+        const seedNameText = this.add.text(0, 90, `Seed: ${this.seedName}` , {
+            fontSize: '16px',
+            fill: '#ffffff'
+        }).setOrigin(0.5);
         // 컨테이너에 요소 추가
-        this.pauseMenuContainer.add([overlay, menuBg, titleText, resumeBtn, mainBtn]);
+        this.pauseMenuContainer.add([overlay, menuBg, titleText, resumeBtn, mainBtn,seedNameText]);
     }
+
     makeButton(x,y, width,height, text, options={}){
         const container = this.add.container(x,y).setInteractive({ 
             hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2,width, height), 
             hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-            useHandCursor: true // 컨테이너에 직접 커서 설정!
+            useHandCursor: true // 컨테이너에 직접 커서 설정
         });;
          const fontStyle ={
             fontFamily:'Arial',

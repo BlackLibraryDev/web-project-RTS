@@ -25,18 +25,10 @@ export default class metaMap extends Phaser.Scene {
         this.input.addPointer(2); //멀티터치 활성화
         this.zoomRatio = GameOptions.config.zoomRatio;
          const uiScene = this.scene.get('UIScene');
-        this.mapGrid = [
-            [0, 3, 3, 1, 3, 4, 3, 3],
-            [0, 3, 1, 3, 4, 3, 3, 3],
-            [3, 3, 1, 3, 3, 3, 3, 4],
-            [3, 3, 1, 1, 1, 3, 4, 2],
-            [3, 3, 3, 1, 1, 3, 2, 2],
-            [0, 3, 3, 3, 3, 3, 2, 0],
-            [0, 2, 2, 2, 3, 0, 2, 0]
-        ];
-        const seedName = 'my_explore_world'+ Math.floor(Math.random()*100000)
+        const seedName = 'world'+ Math.floor(Math.random()*100000000)
        this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
         console.log(`Random Seed: ${seedName}`);
+        uiScene.seedName = seedName;
 
         this.mapDatas = [];
         for(let r = 0; r < this.mapGrid.length; r++) {
