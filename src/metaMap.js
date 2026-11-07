@@ -26,8 +26,8 @@ export default class metaMap extends Phaser.Scene {
         this.zoomRatio = GameOptions.config.zoomRatio;
          const uiScene = this.scene.get('UIScene');
         const seedName = 'world'+ Math.floor(Math.random()*100000000)
-       this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
-        console.log(`Random Seed: ${seedName}`);
+        this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
+        //console.log(`Random Seed: ${seedName}`);
         uiScene.seedName = seedName;
 
         this.mapDatas = [];
@@ -73,7 +73,10 @@ export default class metaMap extends Phaser.Scene {
                 };
             }
         }
-        
+        //마을 생성
+        this.generateVil(3);
+
+
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
         const startingPoint = this.randomStartingPoint();
         this.hexTileFogVisible(startingPoint.r, startingPoint.q);
@@ -86,6 +89,8 @@ export default class metaMap extends Phaser.Scene {
         // 2. 맵 데이터 바탕으로 인스턴스 배치
         this.generateHexMapFromGrid(this.mapDatas);
         this.renderMapFog(this.mapDatas);
+
+        
 
         // 3. 카메라 드래그 이동 설정
         this.setupCameraControls();
@@ -152,20 +157,44 @@ export default class metaMap extends Phaser.Scene {
          }
         return {q:randomQ , r:randomR, playerTile:_playerTile}
     }
+    generateVil(num = 1){
+        for(let n =0;n<num ; n++){
+            const vilPoint = this.randomStartingPoint();
+            const array = this.hexTileRadious(vilPoint.r, vilPoint.q);
+            for(let i = 0; i <array.length ; i++){
+                if(Math.random()<0.7){
+                    array[i].type  = TERRAIN_TYPES.VIL.id;
+                    array[i].type = TERRAIN_TYPES.VIL;
+                    array[i].name = TERRAIN_TYPES.VIL.name
+                    let facilityList =[]
+                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment)
+                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse)
+                    array[i].facility = facilityList;
+                }
+            }
+        }
+    }
 
     hexTileFogVisible( randomR, randomQ) {
         //주변도 밝히기
-        this.mapDatas[randomR][randomQ].explored = true;
-        //console.log(`(${randomR}, ${randomQ}) | 지형: ${this.mapDatas[randomR][randomQ].type.name}`);
-        if(randomR > 0) this.mapDatas[randomR-1][randomQ].explored = true;
-        if(randomR < this.mapGrid.length-1) this.mapDatas[randomR+1][randomQ].explored = true;
-        if(randomQ > 0) this.mapDatas[randomR][randomQ-1].explored = true;
-        if(randomQ < this.mapGrid[0].length-1) this.mapDatas[randomR][randomQ+1].explored = true;
-        if(randomR > 0 && randomQ < this.mapGrid[0].length-1) this.mapDatas[randomR-1][randomQ+1].explored = true;
-        if(randomR < this.mapGrid.length-1 && randomQ > 0) this.mapDatas[randomR+1][randomQ-1].explored = true;
+        const array = this.hexTileRadious(randomR,randomQ);
+        for(let i = 0; i <array.length ; i++){
+            array[i].explored = true;
+        }
         this.renderMapFog(this.mapDatas);
     }
-    
+    hexTileRadious(r,q){
+        let array = []
+        array.push( this.mapDatas[r][q] );
+        if(r > 0) array.push(this.mapDatas[r-1][q])
+        if(r < this.mapGrid.length-1) array.push(this.mapDatas[r+1][q])
+        if(q > 0) array.push(this.mapDatas[r][q-1])
+        if(q < this.mapGrid[0].length-1) array.push(this.mapDatas[r][q+1])
+        if(r > 0 && q < this.mapGrid[0].length-1) array.push(this.mapDatas[r-1][q+1])
+        if(r < this.mapGrid.length-1 && q > 0) array.push(this.mapDatas[r+1][q-1])
+
+        return array;
+    }
 
     // Axial 좌표 (q, r) -> 화면 픽셀 좌표 (x, y) 변환식
     axialToPixel(q, r) {

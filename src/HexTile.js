@@ -9,8 +9,8 @@ export const TERRAIN_TYPES = {
     REDWOOD: { id: 2, name: 'redwood', color: 0xf3572c, moveCost: 2 ,isWalkable: true},
     GRASS: { id: 3, name: 'field', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
     MOUNTAIN: { id: 4, name: 'mountain', color: 0x885522, moveCost: 5 ,isWalkable: true},
-    ROAD: { id: 11, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
-    BUILDING: { id: 12, name: '건물', color: 0xcc3333, moveCost: 1,isWalkable: true }
+    ROAD: { id: 12, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
+    VIL: { id: 11, name: 'vil', color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
 
 export const Facility={

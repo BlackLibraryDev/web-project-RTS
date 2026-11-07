@@ -17,7 +17,8 @@ export default class PreloadScene extends Phaser.Scene {
         this.load.image('tile_redwood', 'assets/tiles/redwood.png');
         this.load.image('tile_field', 'assets/tiles/field.png');
         this.load.image('tile_mountain', 'assets/tiles/mountain.png');
-        
+        this.load.image('tile_vil', 'assets/tiles/vil.png');
+
         this.load.spritesheet('unit_commandVan', 'assets/commandVan.png', { frameWidth: 256 , frameHeight: 256 });
         GameData.load();
         // 에셋 로드 코드...
