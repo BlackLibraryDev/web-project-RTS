@@ -45,7 +45,9 @@ export function getHexLine(q1, r1, q2, r2) {
 
 // Axial 좌표를 화면 픽셀 좌표로 변환하는 헬퍼
 export function axialToPixel(q, r) {
-    const x = startX + HEX_SIZE * (Math.sqrt(3) * q + Math.sqrt(3) / 2 * r);
-    const y = startY + HEX_SIZE * (3 / 2 * r);
-    return { x, y };
+        const xOffset = (r % 2 !== 0) ? (Math.sqrt(3) * HEX_SIZE / 2) : 0;
+        const x = startX + (Math.sqrt(3) * HEX_SIZE) * q + xOffset;
+        const y = startY + HEX_SIZE * (3 / 2 * r);
+
+        return { x, y };
 }

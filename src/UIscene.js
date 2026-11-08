@@ -56,7 +56,42 @@ export default class UIScene extends Phaser.Scene {
         const menuBg = this.add.rectangle(startX+150,0,300,this.scale.height-40,0x000000,0.7).setStrokeStyle(2,0xffffff)
         .setInteractive(); // 뒤쪽 인게임 클릭 차단;
 
-        const titleTxt = this.add.text(startX+20,startY, 'title' ,fontStyle).setOrigin(0);
+        const sX =startX+21;
+        const sY =startY+4;
+        const points = [];
+        const HEX_SIZE = 36;
+        for (let i = 0; i < 6; i++) {
+            const angleDeg = 60 * i - 30;
+            const angleRad = (Math.PI / 180) * angleDeg;
+            points.push(new Phaser.Geom.Point(
+               sX+ HEX_SIZE * Math.cos(angleRad),
+               sY+ HEX_SIZE * Math.sin(angleRad)
+            ));
+        }
+        const textureToUse ='tile_fog';
+        const tileImage = this.add.sprite(sX, sY, textureToUse).setOrigin(0.5).setScale(0.5);;
+        
+        const targetHeight = HEX_SIZE * 2;
+        const scale = targetHeight / tileImage.height;
+        tileImage.setScale(scale);
+        
+        const bgGraphics = this.add.graphics();
+        bgGraphics.fillStyle(0xffffff, 0);
+        bgGraphics.lineStyle(2, 0xffffff, 1);
+        bgGraphics.fillPoints(points, true);
+        bgGraphics.strokePoints(points, true);
+
+
+        const returnButton = this.makeButton(sX, sY , 50,50, '<')
+        returnButton.items.bg.setVisible(false);
+        returnButton.items.nameTxt.setFontSize(36)
+        returnButton.on('pointerdown', () => {
+            this.tileInfoContainer.setVisible(false);
+        });
+
+        
+
+        const titleTxt = this.add.text(startX+55,startY-8, 'title' ,fontStyle).setOrigin(0);
 
         const facilityContainer = this.add.container(startX, startY+40);
         const facilityBg = this.add.rectangle(10, 0, 280,400, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
@@ -77,11 +112,12 @@ export default class UIScene extends Phaser.Scene {
             facilityContainer: facilityContainer,
             garrisonContainer: garrisonContainer,
             startX: startX,
-            startY: startY
+            startY: startY,
+            tileImage : tileImage
         }
-        this.tileInfoContainer.add([menuBg, titleTxt ,facilityContainer, garrisonContainer]);
+        this.tileInfoContainer.add([menuBg,  tileImage,bgGraphics, returnButton,titleTxt ,facilityContainer, garrisonContainer]);
 
-       // this.tileInfoContainer.setVisible(false);//기본값 안보이게
+        this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
     make_tileInfoContainer(data, startX, startY, bgColor =null){
         const container = this.add.container(startX,startY);
@@ -171,11 +207,13 @@ export default class UIScene extends Phaser.Scene {
 
     }
     setTileInfo(tileData){
+        if(!this.tileInfoContainer) return
         this.tileInfoContainer.setVisible(true);
         const items = this.tileInfoContainer.items;
         if(tileData.explored && tileData.name != 'empty'){
+            items.tileImage.setTexture(`tile_${tileData.name}`)
             items.titleText.setText( 
-                `${tileData.name} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
+                `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
         }else{
             //미탐험지역
@@ -255,6 +293,10 @@ export default class UIScene extends Phaser.Scene {
         const nameTxt = this.add.text(0,0, LanguageData.getText(text), fontStyle).setOrigin(0.5);
 
         container.add([bg, nameTxt]);
+        container.items ={
+            bg:bg,
+            nameTxt:nameTxt
+        }
         return container;
     }
 }

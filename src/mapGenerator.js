@@ -14,48 +14,49 @@ export function generateRectangularNoiseMap(width, height, seed = 'default_seed'
 
     
     // ⭕ 2차원 배열 초기화 (height x width)
-    const mapDataArray = [];
-    const scale = options.scale ?? 0.12; // 지형 덩어리 크기
+    // ⭕ 2차원 배열 초기화 (height x width)
+const mapDataArray = [];
+const scale = options.scale ?? 0.05; // 헥스 크기에 맞게 스케일 조정 (보통 0.05 ~ 0.1 사이가 적당)
+const HEX_SIZE = 72; // 타일 반지름 (렌더링과 동일한 값)
 
-    for (let r = 0; r < height; r++) {
-        const row = [];
-        const qOffset = Math.floor(r / 2); // 헥스 직사각형 정렬 오프셋
+for (let r = 0; r < height; r++) {
+    const row = [];
+    
+    // Pointy-top Odd-R 렌더링 공식과 완전히 일치하는 홀수 행 X축 오프셋
+    const rowXOffset = (r % 2 !== 0) ? (Math.sqrt(3) * HEX_SIZE / 2) : 0;
+
+    for (let q = 0; q < width; q++) {
+        // 1. axialToPixel과 정확히 일치하는 실제 픽셀 월드 좌표 계산
+        const x = (Math.sqrt(3) * HEX_SIZE) * q + rowXOffset;
+        const y = HEX_SIZE * (3 / 2 * r);
+
+        // 2. 픽셀 좌표를 노이즈 공간에 매핑 (스케일 적용)
+        const nx = x * scale;
+        const ny = y * scale;
         
-        for (let q = -qOffset; q < width - qOffset; q++) {
-            const nx = q * scale;
-            const ny = (r + q / 2) * scale;
-            
-            const rawNoise = noise2D(nx, ny);
-            const normalizedNoise = (rawNoise + 1) / 2;
+        const rawNoise = noise2D(nx, ny);
+        const normalizedNoise = (rawNoise + 1) / 2;
 
-            let actualTerrainId = 3; // GRASS 기본
+        let actualTerrainId = 3; // GRASS 기본
 
-            // ⭕ 임계값(Threshold)을 기준으로 지형 판별
-            if (normalizedNoise < waterThreshold) {
-                actualTerrainId = 1; // WATER (물)
-            } else if (normalizedNoise < grassThreshold) {
-                actualTerrainId = 3; // GRASS (들판/평야)
-            } else if (normalizedNoise < redwoodThreshold) {
-                actualTerrainId = 2; // REDWOOD (숲)
-            } else {
-                actualTerrainId = 4; // MOUNTAIN (산)
-            }
-
-            // 개별 타일 객체 생성 후 행(row) 배열에 푸시
-            row.push(actualTerrainId)
-            /*
-            row.push({
-                q: q,
-                r: r,
-                actualTerrainId: actualTerrainId,
-                isExplored: false
-            });
-            */
+        // 3. 임계값(Threshold)을 기준으로 지형 판별
+        if (normalizedNoise < waterThreshold) {
+            actualTerrainId = 1; // WATER (물)
+        } else if (normalizedNoise < grassThreshold) {
+            actualTerrainId = 3; // GRASS (들판/평야)
+        } else if (normalizedNoise < redwoodThreshold) {
+            actualTerrainId = 2; // REDWOOD (숲)
+        } else {
+            actualTerrainId = 4; // MOUNTAIN (산)
         }
-        mapDataArray.push(row);
-    }
 
-    return mapDataArray; // 2차원 배열 반환
+        // ⭕ 객체 구조로 데이터를 담아주어야 나중에 지형 변경 및 길찾기가 편해집니다.
+        row.push( actualTerrainId);
+    }
+    mapDataArray.push(row);
+}
+
+return mapDataArray;
 }
 export function generateHexagonWoldMapData(radious, seed = 'default_seed'){
     const prng = alea(seed);
