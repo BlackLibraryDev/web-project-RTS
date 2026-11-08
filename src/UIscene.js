@@ -12,26 +12,13 @@ export default class UIScene extends Phaser.Scene {
     create() {
         const gameScene = this.scene.get('GameScene');
 
-        // --------------------------------------------------
-        // 1. 일시정지 UI 버튼 (우상단)
-        // --------------------------------------------------
-        const pauseBtn = this.add.text(this.scale.width - 20, 20, '⏸️ PAUSE', {
-            fontSize: '18px',
-            fill: '#ffffff',
-            backgroundColor: '#333333',
-            padding: { x: 10, y: 6 }
-        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
-
-        pauseBtn.on('pointerdown', () => {
-            // GameScene의 pauseGame 메서드 직접 호출 또는 이벤트 발송
-            gameScene.pauseGame();
-        });
-
+    
         // --------------------------------------------------
         // 2. 일시정지 팝업 메뉴 컨테이너 (초기에는 숨김)
         // --------------------------------------------------
         this.make_pauseManuContainer();
 
+        this.make_resourceBar();
         this.make_tileInfo();
 
         // --------------------------------------------------
@@ -44,7 +31,7 @@ export default class UIScene extends Phaser.Scene {
         
     }
     make_tileInfo(){
-        this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2)
+        this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10)
         const fontStyle ={
             fontFamily:'Arial',
             fontSize: '24px',
@@ -83,8 +70,8 @@ export default class UIScene extends Phaser.Scene {
 
 
         const returnButton = this.makeButton(sX, sY , 50,50, '<')
-        returnButton.items.bg.setVisible(false);
-        returnButton.items.nameTxt.setFontSize(36)
+        returnButton.bg.setVisible(false);
+        returnButton.nameTxt.setFontSize(36);
         returnButton.on('pointerdown', () => {
             this.tileInfoContainer.setVisible(false);
         });
@@ -211,7 +198,7 @@ export default class UIScene extends Phaser.Scene {
         this.tileInfoContainer.setVisible(true);
         const items = this.tileInfoContainer.items;
         if(tileData.explored && tileData.name != 'empty'){
-            items.tileImage.setTexture(`tile_${tileData.name}`)
+            if(items.tileImage)  items.tileImage.setTexture(`tile_${tileData.name}` ?? 'tile_fog');
             items.titleText.setText( 
                 `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
@@ -222,9 +209,78 @@ export default class UIScene extends Phaser.Scene {
         }
         
     }
+    renderResourceBar(){
+        const ctn = this.resourceContainer;
+        const manpower = {baby:0, child:0, adult:0, house:0 }
+        ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
+
+        //인벤토리 구현 및 아이템 sum 후 수치표현
+        ctn.miscText.setText(``);
+    }
+    make_resourceBar(){
+        this.resourceContainer = this.add.container(0, 0).setDepth(2);
+        const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
+        const startX = 490;
+        const startY = 32;
+        const menuBg = this.add.rectangle(0,0,this.scale.width,60,0x000000,0.9).setStrokeStyle(2,0xffffff).setOrigin(0)
+        .setInteractive(); // 뒤쪽 인게임 클릭 차단;
+
+        const pauseBtn =  this.makeButton(50,30,80,50, 'MENU');
+        pauseBtn.on('pointerdown', () => {
+            // GameScene의 pauseGame 메서드 직접 호출 또는 이벤트 발송
+            const gameScene = this.scene.get('GameScene');
+            gameScene.pauseGame();
+        });
+        const manPower = this.makeResourceButton(startX,startY,200,50, '👤',` 0/0/10`);
+
+         
+        const food = this.makeResourceButton(startX+220,startY,200,50, '🥔',`0/1000`); 
+
+        const misc = this.makeResourceButton(startX+440,startY,200,50, '⚙️', `0/1000`);
+
+
+        const fuel = this.makeResourceButton(startX+660,startY,200,50, '🛢',`0/1000`); //⛽
+
+
+        this.resourceContainer.add([menuBg, pauseBtn, manPower, food, misc, fuel ])
+        this.resourceContainer.manPowerText = manPower.nameTxt;
+        this.resourceContainer.foodText = food.nameTxt;
+        this.resourceContainer.miscText = misc.nameTxt;
+        this.resourceContainer.fuleText = fuel.nameTxt;
+    }
+    makeResourceButton(x,y, width,height,  icon,text, options={}){
+        const container = this.add.container(x,y).setInteractive({ 
+            hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2,width, height), 
+            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+            useHandCursor: true // 컨테이너에 직접 커서 설정
+        });;
+         const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 },
+            fixedWidth:width
+        }
+        const color = options.color?? 0x000000;
+         const bg = this.add.rectangle(0,0,width,height, color ,1).setStrokeStyle(2,0xffffff).setOrigin(0.5);
+        const iconTxt = this.add.text(-width/2+10,0, icon, fontStyle).setOrigin(0,0.5);
+        const nameTxt = this.add.text(width,0,text, fontStyle).setOrigin(1,0.5);
+
+        container.add([bg, iconTxt, nameTxt]);
+        container.bg = bg;
+        container.nameTxt = nameTxt;
+        container.icon = iconTxt;
+        return container;
+    }
+
 
     make_pauseManuContainer() {
-         this.pauseMenuContainer = this.add.container(this.scale.width / 2, this.scale.height / 2);
+        this.pauseMenuContainer = this.add.container(this.scale.width / 2, this.scale.height / 2);
         this.pauseMenuContainer.setVisible(false);
         this.pauseMenuContainer.setDepth(100);
 
@@ -293,10 +349,8 @@ export default class UIScene extends Phaser.Scene {
         const nameTxt = this.add.text(0,0, LanguageData.getText(text), fontStyle).setOrigin(0.5);
 
         container.add([bg, nameTxt]);
-        container.items ={
-            bg:bg,
-            nameTxt:nameTxt
-        }
+        container.bg = bg;
+        container.nameTxt = nameTxt;
         return container;
     }
 }

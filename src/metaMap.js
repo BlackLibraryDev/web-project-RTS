@@ -106,7 +106,7 @@ export default class metaMap extends Phaser.Scene {
             playerTile.garrison[i].team = 1;
         }
         this.centerCameraOnTile(startingPoint.r, startingPoint.q);
-        uiScene.setTileInfo(this.mapDatas[startingPoint.r][startingPoint.q])
+        //uiScene.setTileInfo(this.mapDatas[startingPoint.r][startingPoint.q])
 
 
         // 2. 맵 데이터 바탕으로 인스턴스 배치

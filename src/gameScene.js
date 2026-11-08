@@ -46,7 +46,7 @@ export default class GameScene extends Phaser.Scene {
 
             //console.log(`(${tile.q}, ${tile.r}) | 지형: ${tile.terrain.name}`);
             this.mapGrid[tile.r][tile.q] = tile.terrain.id; // 클릭된 타일의 지형 ID를 맵 데이터에 반영
-            this.saveMapGrid(); // 타일 클릭 시마다 맵 데이터 저장
+            //this.saveMapGrid(); // 타일 클릭 시마다 맵 데이터 저장
         });
 
         // 씬 종료 시 이벤트 해제
