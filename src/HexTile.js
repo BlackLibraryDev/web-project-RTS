@@ -3,14 +3,14 @@ export const HEX_SIZE = 72; // 타일 반지름(px)
 
 // 지형 정의 (이동 비용, 색상 등)
 export const TERRAIN_TYPES = {
-    FOG: {id:-1, name:'fog', color:0x333333, moveCost:1, isWalkable: true},
-    EMPTY: { id: 0, name: 'empty', color: 0x000000, moveCost: 1 ,isWalkable: false},
-    WATER: { id: 1, name: 'water', color: 0x3388cc, moveCost: 2 ,isWalkable: false},
-    REDWOOD: { id: 2, name: 'redwood', color: 0xf3572c, moveCost: 2 ,isWalkable: true},
-    GRASS: { id: 3, name: 'field', color: 0x55aa55, moveCost: 1 ,isWalkable: true},
-    MOUNTAIN: { id: 4, name: 'mountain', color: 0x885522, moveCost: 5 ,isWalkable: true},
-    ROAD: { id: 12, name: '도로', color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
-    VIL: { id: 11, name: 'vil', color: 0xcc3333, moveCost: 1,isWalkable: true }
+    FOG: {id:-1, name:'fog', slot:0, color:0x333333, moveCost:1, isWalkable: true},
+    EMPTY: { id: 0, name: 'empty', slot:0, color: 0x000000, moveCost: 1 ,isWalkable: false},
+    WATER: { id: 1, name: 'water', slot:1, color: 0x3388cc, moveCost: 2 ,isWalkable: false},
+    REDWOOD: { id: 2, name: 'redwood', slot:1, color: 0xf3572c, moveCost: 2 ,isWalkable: true},
+    GRASS: { id: 3, name: 'field', slot:2, color: 0x55aa55, moveCost: 1 ,isWalkable: true},
+    MOUNTAIN: { id: 4, name: 'mountain', slot:1,  color: 0x885522, moveCost: 5 ,isWalkable: true},
+    ROAD: { id: 12, name: '도로', slot:0, color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
+    VIL: { id: 11, name: 'vil', slot:2, color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
 
 export const Facility={

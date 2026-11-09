@@ -1,6 +1,7 @@
 // src/UIscene.js
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
+import { GameData } from './core/data.js';
 
 export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
 
@@ -21,6 +22,12 @@ export default class UIScene extends Phaser.Scene {
         this.make_resourceBar();
         this.make_tileInfo();
 
+        this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
+        this.endTurnButton.on('pointerdown', () => {
+            //턴 넘김
+            
+        }); 
+
         // --------------------------------------------------
         // 3. GameScene 이벤트 수신
         // --------------------------------------------------
@@ -40,11 +47,11 @@ export default class UIScene extends Phaser.Scene {
         }
         const startX = 30-this.scale.width/2;
         const startY = 40-this.scale.height/2;
-        const menuBg = this.add.rectangle(startX+150,0,300,this.scale.height-40,0x000000,0.7).setStrokeStyle(2,0xffffff)
+        const menuBg = this.add.rectangle(startX+150,20,300,this.scale.height-60,0x000000,0.7).setStrokeStyle(2,0xffffff)
         .setInteractive(); // 뒤쪽 인게임 클릭 차단;
 
         const sX =startX+21;
-        const sY =startY+4;
+        const sY =startY+34;
         const points = [];
         const HEX_SIZE = 36;
         for (let i = 0; i < 6; i++) {
@@ -78,10 +85,10 @@ export default class UIScene extends Phaser.Scene {
 
         
 
-        const titleTxt = this.add.text(startX+55,startY-8, 'title' ,fontStyle).setOrigin(0);
+        const titleTxt = this.add.text(startX+55,sY-12, 'title' ,fontStyle).setOrigin(0);
 
-        const facilityContainer = this.add.container(startX, startY+40);
-        const facilityBg = this.add.rectangle(10, 0, 280,400, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        const facilityContainer = this.add.container(startX, startY+60);
+        const facilityBg = this.add.rectangle(10, 0, 280,380, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         const facilityTxt = this.add.text(20, 10, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
         facilityContainer.add([facilityBg,facilityTxt]);
 
@@ -100,9 +107,11 @@ export default class UIScene extends Phaser.Scene {
             garrisonContainer: garrisonContainer,
             startX: startX,
             startY: startY,
-            tileImage : tileImage
+            tileImage : tileImage,
+            facilityText:facilityTxt,
+            garrisonText:garrisonTxt
         }
-        this.tileInfoContainer.add([menuBg,  tileImage,bgGraphics, returnButton,titleTxt ,facilityContainer, garrisonContainer]);
+        this.tileInfoContainer.add([menuBg,facilityContainer, garrisonContainer,  tileImage,bgGraphics, returnButton,titleTxt ]);
 
         this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
@@ -202,9 +211,13 @@ export default class UIScene extends Phaser.Scene {
             items.titleText.setText( 
                 `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
+            let num = tileData.facility.length;
+            let maxNum = tileData.slot;
+            items.facilityText.setText( `${LanguageData.getText('facility')} - slot: ${num}/${maxNum}`  );
         }else{
             //미탐험지역
             items.titleText.setText(`미탐험지역`)
+            items.facilityText.setText( `${LanguageData.getText('facility')} `  );
             this.clearTileInfoList();
         }
         
@@ -214,8 +227,13 @@ export default class UIScene extends Phaser.Scene {
         const manpower = {baby:0, child:0, adult:0, house:0 }
         ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
 
+        const data = GameData.saveData;
         //인벤토리 구현 및 아이템 sum 후 수치표현
-        ctn.miscText.setText(``);
+        ctn.manPowerText.setText(`${data.manPower}/20`);
+        ctn.ammoText.setText(`${data.ammo}/1000`);
+        ctn.foodText.setText(`${data.food}/1000`);
+        ctn.miscText.setText(`${data.misc}/1000`);
+        ctn.fuleText.setText(`${data.fuel}/1000`);
     }
     make_resourceBar(){
         this.resourceContainer = this.add.container(0, 0).setDepth(2);
@@ -225,7 +243,7 @@ export default class UIScene extends Phaser.Scene {
             fill: '#ffffff',
             padding:{ x: 2, y: 2 }
         }
-        const startX = 490;
+        const startX = 450;
         const startY = 32;
         const menuBg = this.add.rectangle(0,0,this.scale.width,60,0x000000,0.9).setStrokeStyle(2,0xffffff).setOrigin(0)
         .setInteractive(); // 뒤쪽 인게임 클릭 차단;
@@ -236,22 +254,29 @@ export default class UIScene extends Phaser.Scene {
             const gameScene = this.scene.get('GameScene');
             gameScene.pauseGame();
         });
-        const manPower = this.makeResourceButton(startX,startY,200,50, '👤',` 0/0/10`);
+
+        const padding = 180;
+        const manPower = this.makeResourceButton(startX,startY,160,50, '👤',` 0/0/10`);
+
+        const ammo = this.makeResourceButton(startX+padding*1, startY,160,50,'🔫', `0/1000`);
 
          
-        const food = this.makeResourceButton(startX+220,startY,200,50, '🥔',`0/1000`); 
+        const food = this.makeResourceButton(startX+padding*2,startY,160,50, '🥔',`0/1000`); 
 
-        const misc = this.makeResourceButton(startX+440,startY,200,50, '⚙️', `0/1000`);
-
-
-        const fuel = this.makeResourceButton(startX+660,startY,200,50, '🛢',`0/1000`); //⛽
+        const misc = this.makeResourceButton(startX+padding*3,startY,160,50, '⚙️', `0/1000`);
 
 
-        this.resourceContainer.add([menuBg, pauseBtn, manPower, food, misc, fuel ])
+        const fuel = this.makeResourceButton(startX+padding*4,startY,160,50, '⛽',`0/1000`); //
+
+
+        this.resourceContainer.add([menuBg, pauseBtn, manPower, ammo , food, misc, fuel ])
         this.resourceContainer.manPowerText = manPower.nameTxt;
+        this.resourceContainer.ammoText = ammo.nameTxt;
         this.resourceContainer.foodText = food.nameTxt;
         this.resourceContainer.miscText = misc.nameTxt;
         this.resourceContainer.fuleText = fuel.nameTxt;
+
+        this.renderResourceBar();
     }
     makeResourceButton(x,y, width,height,  icon,text, options={}){
         const container = this.add.container(x,y).setInteractive({ 
@@ -259,17 +284,24 @@ export default class UIScene extends Phaser.Scene {
             hitAreaCallback: Phaser.Geom.Rectangle.Contains,
             useHandCursor: true // 컨테이너에 직접 커서 설정
         });;
-         const fontStyle ={
+         const iconStyle ={
             fontFamily:'Arial',
             fontSize: '24px',
             fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
+          const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            align:'right',
             padding:{ x: 2, y: 2 },
             fixedWidth:width
         }
         const color = options.color?? 0x000000;
          const bg = this.add.rectangle(0,0,width,height, color ,1).setStrokeStyle(2,0xffffff).setOrigin(0.5);
-        const iconTxt = this.add.text(-width/2+10,0, icon, fontStyle).setOrigin(0,0.5);
-        const nameTxt = this.add.text(width,0,text, fontStyle).setOrigin(1,0.5);
+        const iconTxt = this.add.text(-width/2+10,0, icon, iconStyle).setOrigin(0,0.5);
+        const nameTxt = this.add.text(width/2-10,0,text, fontStyle).setOrigin(1,0.5);
 
         container.add([bg, iconTxt, nameTxt]);
         container.bg = bg;

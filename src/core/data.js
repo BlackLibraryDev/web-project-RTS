@@ -1,10 +1,11 @@
 // src/data.js
 export const GameData = {
     saveData: {
-        gold: 10,
-        score: 0,
-        level: 1,
-        playerHealth: 100,
+        manPower:10,
+        ammo:100,
+        food:120,
+        fuel:20,
+        misc:500,
         mapGrid : []
     },
 

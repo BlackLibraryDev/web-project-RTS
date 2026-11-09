@@ -59,6 +59,7 @@ export default class metaMap extends Phaser.Scene {
                 let facilityList = [];
                 let garrisonList = [];
                 let teamNum = 0;
+                let maxNum =terrainType.slot; 
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
                     facilityList.push( Facility.redwood)
@@ -68,8 +69,8 @@ export default class metaMap extends Phaser.Scene {
                     facilityList.push( Facility.water )
                 }
                 if(terrainType.name=='field'){
-                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment)
-                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse)
+                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment); 
+                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse); 
                     if(Math.random()< 0.3)  facilityList.push( Facility.Well)
                     if(Math.random()< 0.3)  facilityList.push( Facility.JunkMine)
                     
@@ -87,6 +88,7 @@ export default class metaMap extends Phaser.Scene {
                     team:teamNum,
                     q:q, 
                     r:r,
+                    slot:maxNum,
                     explored: GameOptions.config.debugMode, 
                     facility:facilityList, 
                     garrison:garrisonList
