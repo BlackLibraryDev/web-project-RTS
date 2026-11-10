@@ -26,7 +26,11 @@ export default class UIScene extends Phaser.Scene {
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
         this.endTurnButton.on('pointerdown', () => {
             //턴 넘김
+             
             this.registry.events.emit(GameEvents.TURN_END, true);
+           this.forceUpdateTileInfo();
+
+           this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
         }); 
 
         // --------------------------------------------------
@@ -120,24 +124,71 @@ export default class UIScene extends Phaser.Scene {
 
         this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
-    make_tileInfoContainer(data, startX, startY, bgColor =null){
-        const container = this.add.container(startX,startY);
+    make_tileInfoContainer(team, data, startX, startY, bgColor =null){
+        //타일 내 설치된 시설 혹은 주둔군 버튼
+        const width = 270;
+        const height = 60;
+        const container = this.add.container(startX,startY).setInteractive({ 
+            hitArea: new Phaser.Geom.Rectangle(0,0,width, height), 
+            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+            useHandCursor: true // 컨테이너에 직접 커서 설정
+        });
+        container.on('pointerdown', () => {
+            //클릭 시 
+            if(team !=1){return }
+            if(data.add !=null){
+                console.log(`add ${data.add}`);
+                return;
+            }
+            const player = GameData.saveData;
+          //  console.log(data.labor)
+            if(data.labor!=null){
+              //  console.log(player)
+                if(player.manPower>0){
+                    
+                    player.manPower--;
+                    data.labor++
+                }
+            }
+            this.forceUpdateTileInfo();
+            this.renderResourceBar();
+        });
+        //container.input.topOnly = true; 
+
         const fontStyle ={
             fontFamily:'Arial',
             fontSize: '16px',
             fill: '#ffffff',
             padding:{ x: 2, y: 2 }
         }
+        
         const bgcolor = data.team? ( data.team >1 ? 0xff4f4f :  0x2cb9ff  ) : ( 0x000000 ); 
-        const bg = this.add.rectangle(0,0, 270,60, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
-        const nameTxt = this.add.text(40,5, LanguageData.getText(`${data.name}`), fontStyle).setOrigin(0).setFontSize(20);
+        const bg = this.add.rectangle(0,0, width,height, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
+        
+        let name =`${ LanguageData.getText(data.name)} ${ data.labor!=null? '('+data.labor+')':''}` 
+        const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(20);
 
         let text = `${data.type} ${data.resource? ': '+data.resource :''}`
         const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
 
-        const icon = this.add.image(4,12,'icon').setOrigin(0)
+        const icon = this.add.image(4,12,'icon').setOrigin(0);
 
-        container.add([bg,nameTxt,infoTxt,icon]);
+        const percentage = data.amount!=null ? data.amount / data.maxAmount :0 ; // 비율 계산 (0 ~ 1)
+        const bar = this.add.graphics();
+        // [배경 회색 상자] 중심점 기준으로 그리기 위해 -width/2, -height/2 적용
+        bar.fillStyle(0x333333, 1); // 어두운 회색 배경
+        bar.fillRect(0, height-10, width, 10);
+
+        // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)
+        if (percentage > 0) {
+            bar.fillStyle(0x00ff00, 1); 
+            bar.fillRect(0, height-10, width * percentage, 10);
+        }
+
+
+
+        container.add([bg,nameTxt,infoTxt,icon, bar]);
+        container.bar = bar;
         return container;
     }
 
@@ -168,14 +219,14 @@ export default class UIScene extends Phaser.Scene {
 
                 const data = tileData.facility[i];
 
-                const container = this.make_tileInfoContainer(data, items.facilityContainer.x +15 ,items.facilityContainer.y +i*70 +45);
+                const container = this.make_tileInfoContainer(tileData.team, data, items.facilityContainer.x +15 ,items.facilityContainer.y +i*70 +45);
                 
                 items.facilityList.push(container);
                 this.tileInfoContainer.add(container);
             
             }
             if(tileData.team==1){
-                 const addFacilityBt = this.make_tileInfoContainer({name:'(add Facility)', type:''}, 
+                 const addFacilityBt = this.make_tileInfoContainer(tileData.team,{ name:'(add Facility)', type:'', add:'facility'}, 
                     items.facilityContainer.x+15, items.facilityContainer.y + tileData.facility.length*70 +45,
                     0x43c563);
                 items.facilityList.push(addFacilityBt);
@@ -190,14 +241,14 @@ export default class UIScene extends Phaser.Scene {
 
                 const data = tileData.garrison[i];
 
-                const container = this.make_tileInfoContainer(data, items.garrisonContainer.x +15 ,items.garrisonContainer.y +i*70 +45);
+                const container = this.make_tileInfoContainer(tileData.team, data, items.garrisonContainer.x +15 ,items.garrisonContainer.y +i*70 +45);
                 
                 items.garrisonList.push(container);
                 this.tileInfoContainer.add(container);
             
             }
             if(tileData.team==1){
-                 const addGarrisonBt = this.make_tileInfoContainer({name:'(add Garrison)', type:''}, 
+                 const addGarrisonBt = this.make_tileInfoContainer(tileData.team, {name:'(add Garrison)', type:'' ,add:'garrison'}, 
                     items.garrisonContainer.x+15, items.garrisonContainer.y + tileData.garrison.length*70 +45,
                     0x43c563);
                 items.garrisonList.push(addGarrisonBt);
@@ -207,15 +258,25 @@ export default class UIScene extends Phaser.Scene {
         }
 
     }
+    forceUpdateTileInfo(){
+        if(this.tileData){
+            const metaMap = this.scene.get('metaMap');
+            metaMap.events.emit(GameEvents.TILE_CLICKED, {r:this.tileData.r, q:this.tileData.q} );
+        }
+    }
     setTileInfo(tileData){
         if(!this.tileInfoContainer) return
         this.tileInfoContainer.setVisible(true);
+        this.tileData = tileData;
         const items = this.tileInfoContainer.items;
         if(tileData.explored && tileData.name != 'empty'){
+
             if(items.tileImage)  items.tileImage.setTexture(`tile_${tileData.name}` ?? 'tile_fog');
+
             items.titleText.setText( 
                 `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
+            
             let num = tileData.facility.length;
             let maxNum = tileData.slot;
             items.facilityText.setText( `${LanguageData.getText('facility')} - slot: ${num}/${maxNum}`  );
@@ -227,7 +288,7 @@ export default class UIScene extends Phaser.Scene {
         }
         
     }
-    renderResourceBar(){
+    renderResourceBar( res =null ){
         const ctn = this.resourceContainer;
         const manpower = {baby:0, child:0, adult:0, house:0 }
         ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
@@ -238,7 +299,22 @@ export default class UIScene extends Phaser.Scene {
         ctn.ammoText.setText(`${data.ammo}/1000`);
         ctn.foodText.setText(`${data.food}/1000`);
         ctn.miscText.setText(`${data.misc}/1000`);
-        ctn.fuleText.setText(`${data.fuel}/1000`);
+        ctn.fuelText.setText(`${data.fuel}/1000`);
+
+        if(res !=null){
+            Object.keys(res[1]).forEach((item) => {
+               // console.log(`${item}:${res[1][item]}`)
+                if(ctn[item] !=null){
+                    if(res[1][item]!=0){
+                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', res[1][item]);
+                    }
+                    
+                }
+                
+            })
+            
+        }
+        
     }
     make_resourceBar(){
         this.resourceContainer = this.add.container(0, 0).setDepth(2);
@@ -279,7 +355,12 @@ export default class UIScene extends Phaser.Scene {
         this.resourceContainer.ammoText = ammo.nameTxt;
         this.resourceContainer.foodText = food.nameTxt;
         this.resourceContainer.miscText = misc.nameTxt;
-        this.resourceContainer.fuleText = fuel.nameTxt;
+        this.resourceContainer.fuelText = fuel.nameTxt;
+        this.resourceContainer.manPower = manPower;
+        this.resourceContainer.ammo = ammo;
+        this.resourceContainer.food = food;
+        this.resourceContainer.misc = misc;
+        this.resourceContainer.fuel = fuel;
 
         this.renderResourceBar();
     }
@@ -369,12 +450,44 @@ export default class UIScene extends Phaser.Scene {
         this.pauseMenuContainer.add([overlay, menuBg, titleText, resumeBtn, mainBtn,seedNameText]);
     }
 
+    createFloatingText(startX, startY, textureKey, message) {
+        // 1. 이미지와 텍스트를 하나로 묶을 컨테이너 생성
+        const container = this.add.container(startX, startY).setDepth(20);
+
+        // 2. 이미지 생성 (컨테이너 내부 좌표 0, 0 기준)
+        const img = this.add.image(-50, 0, textureKey);
+        
+        // 3. 텍스트 생성 (이미지 오른쪽에 배치하거나 알맞게 정렬)
+        // 원하시는 정렬 방식에 따라 x, y 값을 조절하세요.
+        const txt = this.add.text(-30, 0, message, {
+            fontSize: '24px',
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3,
+            fontWeight: 'bold'
+        }).setOrigin(0, 0.5); // 세로 정렬 중심을 맞춤
+
+        // 4. 컨테이너에 이미지와 텍스트 담기
+        container.add([img, txt]);
+
+        // 5. 2초 동안 위로 올라가며 서서히 사라지는 트윈(Tween) 효과 적용
+        this.tweens.add({
+            targets: container,
+            y: startY - 50,       // 2초 동안 위로 50px 만큼 이동
+            alpha: 1,             // 투명도를 0으로 만들어 서서히 사라지게 함
+            duration: 2000,       // 2000ms = 2초
+            ease: 'Linear',       // 일정한 속도로 이동
+            onComplete: () => {
+                container.destroy(); // 연출이 끝나면 메모리에서 완전히 삭제 (중요)
+            }
+        });
+    }
     makeButton(x,y, width,height, text, options={}){
         const container = this.add.container(x,y).setInteractive({ 
             hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2,width, height), 
             hitAreaCallback: Phaser.Geom.Rectangle.Contains,
             useHandCursor: true // 컨테이너에 직접 커서 설정
-        });;
+        });
          const fontStyle ={
             fontFamily:'Arial',
             fontSize: '16px',

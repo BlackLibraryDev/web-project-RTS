@@ -132,10 +132,11 @@ export default class metaMap extends Phaser.Scene {
             uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
 
             // 1. 이미 진행 중인 더블클릭 타이머가 있다면 -> '두 번째 클릭' (더블탭 성공!)
-            if (this.doubleClickTimer ) {
+            if (this.doubleClickTimer!=null ) {
                 // 타이머를 취소하여 단일 클릭 이벤트가 발생하는 것을 방지
                 this.doubleClickTimer.remove();
                 this.doubleClickTimer = null;
+            
                 if( clickedTile.r != dobuleClickedTile.r || clickedTile.q != dobuleClickedTile.q) return;
                 //console.log(`[Double Tap] 타일 (${clickedTile.q}, ${clickedTile.r}) 더블클릭됨!`);
                 
@@ -196,21 +197,29 @@ export default class metaMap extends Phaser.Scene {
             //uiScene.setTileInfo(this.mapDatas[pos.r][pos.q])
             
         });
-        this.registry.events.on(GameEvents.TURN_END, (data=false) =>{
+        this.registry.events.on(GameEvents.TURN_END, (isTurnEnd=false) =>{
             //데이터 종료 버튼 누를 시 자원 계산
-            if(data){
+            
+            const res = this.calculateResource(isTurnEnd);
+           console.warn('turnEnd', res[1])
+            if(isTurnEnd){
                 //턴 종료 시
                 //turn ++ 
+                const player= GameData.saveData
+                Object.keys(res[1]).forEach((item) => {
+                    //console.log(`${item}:${res[1][item]}`)
+                    player[item]+= res[1][item];
+                })
             }
-            this.calculateResource();
-            uiScene.renderResourceBar();
-
+            uiScene.renderResourceBar( res);
+            
         });
 
         this.events.once('shutdown', () => {
             this.events.off(GameEvents.TILE_CLICKED);
             this.events.off(GameEvents.MOVE_POINT);
             this.registry.events.off(GameEvents.TURN_END);
+            this.doubleClickTimer =null;
             console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
     }
@@ -243,6 +252,7 @@ export default class metaMap extends Phaser.Scene {
                     let facilityList =[]
                     if(Math.random()< 0.4)  facilityList.push( this.objectCopy( Facility.Apartment))
                     if(Math.random()< 0.3)  facilityList.push( this.objectCopy( Facility.BoardingHouse));
+                    if(Math.random()< 0.9)  facilityList.push( this.objectCopy( Facility.JunkMine));
                     array[i].facility = facilityList;
                 }
             }
@@ -254,10 +264,13 @@ export default class metaMap extends Phaser.Scene {
         // 방법 B: Object.assign() 사용
         return Object.assign({}, object);
     }
-    calculateResource(){
+    /**
+     * 자원 총합 계산 및 
+     */
+    calculateResource(isEndTurn=false){
         //자원 총합 계산
         const data = GameData.saveData;
-        const res = {
+        const res0 = {
             house :0,
             manPower:0,
             ammo:0,
@@ -265,47 +278,55 @@ export default class metaMap extends Phaser.Scene {
             food:0,
             fuel:0
         }
+        const res = [this.objectCopy(res0) , this.objectCopy(res0), this.objectCopy(res0) ] ;
         for(let r = 0; r < this.mapDatas.length; r++) {
             for(let q = 0; q < this.mapDatas[r].length; q++) {
                 const mapdata = this.mapDatas[r][q];
                 const facility = mapdata.facility;
                 const garrison = mapdata.garrison;
                 const team = mapdata.team;
-                if(team ==1 ){
-                    for(let i = 0; i < facility.length ; i++){
-                        const fs = facility[i];
-                        if(fs.amount ){
-                            if(fs.amount>0){
-                                const delta = fs.amount>10 ? 10 : fs.amount ;
-                                switch(fs.type){
-                                    case 'house':
-                                        
-                                        res.house += fs.amount;
-                                        break;
-
-                                    case 'JunkMine':
-                                        res.misc += delta *res.labor;
-                                        res.amount -= res.labor;
-                                        break;
-                                }
-                            }else{
-                                //자원 소진의 경우
-                                fs.amount = 0;
+                
+                for(let i = 0; i < facility.length ; i++){
+                    const fs = facility[i];
+                    if(fs.amount!=null ){
+                        if(fs.amount>0){
+                            const delta = fs.amount>10 ? 10 : fs.amount ;
+                            switch(fs.type){
+                                case 'house':
+                                    
+                                    res[team].house += fs.amount;
+                                    break;
                             }
-                            
+                            switch(fs.name){
+                                case 'junkMine':
+                                   // console.log(fs.labor)
+                                    res[team].misc += delta *fs.labor;
+                                    fs.amount -= delta *fs.labor;
+                                    break;
+                                case 'redwood':
+                                    res[team].misc += delta *fs.labor;
+                                    fs.amount -= delta *fs.labor;
+                                    break;
+                            }
+                        }else{
+                            //자원 소진의 경우
+                            fs.amount = 0;
                         }
-
+                        
                     }
+
                 }
+                
                 
             }
         }
-        console.warn( res );
-        data.house = res.house;
-
+        
+        data.house = res[1].house;
+        
+        return res;
         //GameData.save();
     }
-
+    ////////////////////////////////////////////////////////////////////////////////////////
     hexTileFogVisible( randomR, randomQ) {
         //주변도 밝히기
         const array = this.hexTileRadious(randomR,randomQ);

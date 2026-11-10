@@ -33,6 +33,8 @@ export default class GameScene extends Phaser.Scene {
             if(isPaused){
                 console.log('GameScene 일시 정지됨');
                 // 물리 엔진 정지 (필요 시)
+                console.log('pauseGame()') 
+                //this.scene.pause('GameScene');
                 this.physics.pause();
                 metaMap.physics.pause();
             }else{
@@ -76,8 +78,8 @@ export default class GameScene extends Phaser.Scene {
     pauseGame() {
         if (!this.scene.isPaused('GameScene')) {
             // 1. GameScene 일시정지 (update, physics, tweens 동작 멈춤)
-            this.scene.pause('GameScene');
-
+            
+            this.registry.events.emit(GameEvents.GAME_PAUSE, true);
             // 2. UIScene에 일시정지 상태 전달 (메뉴 팝업 띄우기)
             //this.registry.events.emit(GameEvents.GAME_PAUSE, true);
         }
