@@ -1,12 +1,13 @@
 // src/data.js
 export const GameData = {
     saveData: {
+        house:0,
         manPower:10,
         ammo:100,
         food:120,
         fuel:20,
         misc:500,
-        mapGrid : []
+        mapDatas:[]
     },
 
     save() {

@@ -26,23 +26,26 @@ export default class GameScene extends Phaser.Scene {
 
         // 1. UIScene에서 '재개' 요청을 보냈을 때 수신
         const uiScene = this.scene.get('UIScene');
-        uiScene.events.on(GameEvents.GAME_RESUMED, this.resumeGame, this);
+        const metaMap = this.scene.get('metaMap');
 
         // 2. GameScene 자체 일시정지 이벤트 콜백
-        this.events.on('pause', () => {
-            console.log('GameScene 일시 정지됨');
-            // 물리 엔진 정지 (필요 시)
-            this.physics.pause();
+        this.registry.events.on(GameEvents.GAME_PAUSE, (isPaused) => {
+            if(isPaused){
+                console.log('GameScene 일시 정지됨');
+                // 물리 엔진 정지 (필요 시)
+                this.physics.pause();
+                metaMap.physics.pause();
+            }else{
+                console.log('GameScene 재개됨');
+                // 물리 엔진 재개
+                this.physics.resume();
+                metaMap.physics.resume();
+            }
+            
         });
 
-        // 3. GameScene 자체 재개 이벤트 콜백
-        this.events.on('resume', () => {
-            console.log('GameScene 재개됨');
-            // 물리 엔진 재개
-            this.physics.resume();
-        });
 
-        this.events.on('tileClicked', (tile) => {
+        this.events.on(GameEvents.TILE_CLICKED, (tile) => {
 
             //console.log(`(${tile.q}, ${tile.r}) | 지형: ${tile.terrain.name}`);
             this.mapGrid[tile.r][tile.q] = tile.terrain.id; // 클릭된 타일의 지형 ID를 맵 데이터에 반영
@@ -52,6 +55,8 @@ export default class GameScene extends Phaser.Scene {
         // 씬 종료 시 이벤트 해제
         this.events.once('shutdown', () => {
             uiScene.events.off(GameEvents.GAME_RESUMED, this.resumeGame, this);
+            this.registry.events.off(GameEvents.GAME_RESUMED);
+            this.registry.events.off(GameEvents.TILE_CLICKED)
         });
        
         ///
@@ -62,7 +67,9 @@ export default class GameScene extends Phaser.Scene {
     update() {
         // ESC 키 입력 시 일시정지 토글
         if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
-            this.pauseGame();
+            if(this.scene.isPaused('GameScene') ) { return };
+            this.registry.events.emit(GameEvents.GAME_PAUSE, true);
+            //this.pauseGame();
         }
     }
 
@@ -72,7 +79,7 @@ export default class GameScene extends Phaser.Scene {
             this.scene.pause('GameScene');
 
             // 2. UIScene에 일시정지 상태 전달 (메뉴 팝업 띄우기)
-            this.events.emit(GameEvents.TOGGLE_PAUSE, true);
+            //this.registry.events.emit(GameEvents.GAME_PAUSE, true);
         }
     }
 
@@ -80,9 +87,9 @@ export default class GameScene extends Phaser.Scene {
         if (this.scene.isPaused('GameScene')) {
             // 1. GameScene 재개
             this.scene.resume('GameScene');
-
+            console.log('resume')
             // 2. UIScene에 재개 상태 전달 (메뉴 팝업 닫기)
-            this.events.emit(GameEvents.TOGGLE_PAUSE, false);
+            //this.registry.events.emit(GameEvents.GAME_PAUSE, false);
         }
     }
 }

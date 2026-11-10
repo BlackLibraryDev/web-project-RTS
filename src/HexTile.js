@@ -14,15 +14,20 @@ export const TERRAIN_TYPES = {
 };
 
 export const Facility={
-    redwood:{name:'redwood',        type:'resource', resource:'wood'},
-    water:{name:'water',            type:'resource', resource:'water'},
+    redwood:{name:'redwood',        type:'resource', resource:'wood',labor:0,  amount:100, maxAmount:100},
+    water:{name:'water',            type:'resource', resource:'water',labor:0,  amount:-1, maxAmount:-1},
     WaterPump:{name:'waterPump',    type:'', resource:'water'},
     Well:{name:'well',              type:'storage', resource:'water'},
-    GasStation:{name:'gasStation',  type:'storage', resource:'gas'},
-    GasTank:{name:'gasStation',     type:'storage', resource:'gas'},
-    JunkMine:{name:'junkMine',      type:'mine', resource:'misc'},
-    Apartment:{name:'apartment',            type:'house'},
-    BoardingHouse:{name:'boardingHouse',    type:'house'}
+    GasStation:{name:'gasStation',  type:'storage', resource:'gas',labor:0,  amount:100, maxAmount:100},
+    GasTank:{name:'gasStation',     type:'storage', resource:'gas',labor:0,  amount:500, maxAmount:500},
+    JunkMine:{name:'junkMine',      type:'mine', resource:'misc', labor:0, amount:100, maxAmount:100},
+    Apartment:{name:'apartment',            type:'house', amount:10},
+    BoardingHouse:{name:'boardingHouse',    type:'house', amount:5 }
+}
+export class facility extends Phaser.GameObjects.Container {
+    constructor(scene ){
+
+    }
 }
 
 export class HexTile extends Phaser.GameObjects.Container {
@@ -55,13 +60,6 @@ export class HexTile extends Phaser.GameObjects.Container {
 
         // 마우스 상호작용 이벤트
         this.on('pointerdown', () => {
-
-            //임시로 씬의 mapNumber를 참조하여 지형 변경
-            //this.terrain = Object.values(TERRAIN_TYPES).find(t => t.id === this.scene.mapNumber) || TERRAIN_TYPES.EMPTY;
-            //this.drawHexagon(this.terrain.color);
-            
-            //console.log(this.scene.mapNumber);
-            //console.log(`(${this.q}, ${this.r}) | 지형: ${this.terrain.name}`);
             scene.events.emit('tileClicked', this);
         });
 

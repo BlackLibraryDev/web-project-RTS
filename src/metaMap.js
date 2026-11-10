@@ -8,6 +8,8 @@ import { Unit } from './Unit.js';
 import { getHexLine , axialToPixel } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
+import { GameEvents } from './events.js';
+import { GameData } from './core/data.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -62,17 +64,18 @@ export default class metaMap extends Phaser.Scene {
                 let maxNum =terrainType.slot; 
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
-                    facilityList.push( Facility.redwood)
+                   
+                    facilityList.push( this.objectCopy(Facility.redwood));
                 }
 
                 if(terrainType.name=='water'){
                     facilityList.push( Facility.water )
                 }
                 if(terrainType.name=='field'){
-                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment); 
-                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse); 
-                    if(Math.random()< 0.3)  facilityList.push( Facility.Well)
-                    if(Math.random()< 0.3)  facilityList.push( Facility.JunkMine)
+                    if(Math.random()< 0.4)  facilityList.push( this.objectCopy(Facility.Apartment)); 
+                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.BoardingHouse)); 
+                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.Well));
+                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.JunkMine));
                     
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'scout', type:'infantry', amount:1})}
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'anti-drone team', type:'infantry', amount:1})}
@@ -125,7 +128,7 @@ export default class metaMap extends Phaser.Scene {
         // 더블탭 판정을 위한 시간 제한 (밀리초 단위, 보통 250ms ~ 350ms가 적당)
         const DOUBLE_CLICK_DELAY = 250;
         let dobuleClickedTile = null;
-        this.events.on('tileClicked', (clickedTile) => {
+        this.events.on(GameEvents.TILE_CLICKED, (clickedTile) => {
             uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
 
             // 1. 이미 진행 중인 더블클릭 타이머가 있다면 -> '두 번째 클릭' (더블탭 성공!)
@@ -186,17 +189,28 @@ export default class metaMap extends Phaser.Scene {
 
             
         });
-        this.events.on('movePoint', (pos) =>{
+        this.events.on(GameEvents.MOVE_POINT, (pos) =>{
             //console.log(`도착한 타일: ${pos.q} ${pos.r}`)
             this.hexTileFogVisible( pos.r, pos.q);
 
             //uiScene.setTileInfo(this.mapDatas[pos.r][pos.q])
             
         });
+        this.registry.events.on(GameEvents.TURN_END, (data=false) =>{
+            //데이터 종료 버튼 누를 시 자원 계산
+            if(data){
+                //턴 종료 시
+                //turn ++ 
+            }
+            this.calculateResource();
+            uiScene.renderResourceBar();
+
+        });
 
         this.events.once('shutdown', () => {
-            this.events.off('tileClicked');
-            this.events.off('movePoint');
+            this.events.off(GameEvents.TILE_CLICKED);
+            this.events.off(GameEvents.MOVE_POINT);
+            this.registry.events.off(GameEvents.TURN_END);
             console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
     }
@@ -227,12 +241,69 @@ export default class metaMap extends Phaser.Scene {
                     array[i].type = TERRAIN_TYPES.VIL;
                     array[i].name = TERRAIN_TYPES.VIL.name
                     let facilityList =[]
-                    if(Math.random()< 0.4)  facilityList.push( Facility.Apartment)
-                    if(Math.random()< 0.3)  facilityList.push( Facility.BoardingHouse)
+                    if(Math.random()< 0.4)  facilityList.push( this.objectCopy( Facility.Apartment))
+                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy( Facility.BoardingHouse));
                     array[i].facility = facilityList;
                 }
             }
         }
+    }
+    objectCopy( object ){
+        // 방법 A: 전개 연산자 (...) 사용
+        //array.push({ ...Facility.GasTank });
+        // 방법 B: Object.assign() 사용
+        return Object.assign({}, object);
+    }
+    calculateResource(){
+        //자원 총합 계산
+        const data = GameData.saveData;
+        const res = {
+            house :0,
+            manPower:0,
+            ammo:0,
+            misc:0,
+            food:0,
+            fuel:0
+        }
+        for(let r = 0; r < this.mapDatas.length; r++) {
+            for(let q = 0; q < this.mapDatas[r].length; q++) {
+                const mapdata = this.mapDatas[r][q];
+                const facility = mapdata.facility;
+                const garrison = mapdata.garrison;
+                const team = mapdata.team;
+                if(team ==1 ){
+                    for(let i = 0; i < facility.length ; i++){
+                        const fs = facility[i];
+                        if(fs.amount ){
+                            if(fs.amount>0){
+                                const delta = fs.amount>10 ? 10 : fs.amount ;
+                                switch(fs.type){
+                                    case 'house':
+                                        
+                                        res.house += fs.amount;
+                                        break;
+
+                                    case 'JunkMine':
+                                        res.misc += delta *res.labor;
+                                        res.amount -= res.labor;
+                                        break;
+                                }
+                            }else{
+                                //자원 소진의 경우
+                                fs.amount = 0;
+                            }
+                            
+                        }
+
+                    }
+                }
+                
+            }
+        }
+        console.warn( res );
+        data.house = res.house;
+
+        //GameData.save();
     }
 
     hexTileFogVisible( randomR, randomQ) {
@@ -261,18 +332,6 @@ export default class metaMap extends Phaser.Scene {
         const neighbors = this.hexTileNeighbors(r,q);
         neighbors.splice(0,0,this.mapDatas[r][q])
         return neighbors;
-        /*
-        let array = []
-        array.push( this.mapDatas[r][q] );
-        if(r > 0) array.push(this.mapDatas[r-1][q])
-        if(r < this.mapGrid.length-1) array.push(this.mapDatas[r+1][q])
-        if(q > 0) array.push(this.mapDatas[r][q-1])
-        if(q < this.mapGrid[0].length-1) array.push(this.mapDatas[r][q+1])
-        if(r > 0 && q < this.mapGrid[0].length-1) array.push(this.mapDatas[r-1][q+1])
-        if(r < this.mapGrid.length-1 && q > 0) array.push(this.mapDatas[r+1][q-1])
-
-        return array;
-        */
     }
 
     
@@ -329,6 +388,9 @@ export default class metaMap extends Phaser.Scene {
             }
         }
     }
+
+
+
     centerCameraOnTile( r, q,duration = 700) {
         const {x,y} = axialToPixel(q,r);
         //console.log(x,y)

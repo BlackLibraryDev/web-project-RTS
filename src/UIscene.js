@@ -21,24 +21,29 @@ export default class UIScene extends Phaser.Scene {
 
         this.make_resourceBar();
         this.make_tileInfo();
+        this.registry.events.emit(GameEvents.TURN_END, false);
 
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
         this.endTurnButton.on('pointerdown', () => {
             //턴 넘김
-            
+            this.registry.events.emit(GameEvents.TURN_END, true);
         }); 
 
         // --------------------------------------------------
-        // 3. GameScene 이벤트 수신
+        // 3. registry 이벤트 수신
         // --------------------------------------------------
-        gameScene.events.on(GameEvents.TOGGLE_PAUSE, (isPaused) => {
+        this.registry.events.on(GameEvents.GAME_PAUSE, (isPaused) => {
             this.pauseMenuContainer.setVisible(isPaused);
         }, this);
 
+        this.events.once('shutdown', () => {
+            this.registry.events.off(GameEvents.TURN_END);
+            this.registry.events.off(GameEvents.GAME_PAUSE);
+        });
         
     }
     make_tileInfo(){
-        this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10)
+        this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
         const fontStyle ={
             fontFamily:'Arial',
             fontSize: '24px',
@@ -229,7 +234,7 @@ export default class UIScene extends Phaser.Scene {
 
         const data = GameData.saveData;
         //인벤토리 구현 및 아이템 sum 후 수치표현
-        ctn.manPowerText.setText(`${data.manPower}/20`);
+        ctn.manPowerText.setText(`${data.manPower}/${data.house}`);
         ctn.ammoText.setText(`${data.ammo}/1000`);
         ctn.foodText.setText(`${data.food}/1000`);
         ctn.miscText.setText(`${data.misc}/1000`);
@@ -321,7 +326,8 @@ export default class UIScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
         overlay.on('pointerdown', () => {
             // UIScene -> GameScene으로 재개 이벤트 발송
-            this.events.emit(GameEvents.GAME_RESUMED);
+            this.registry.events.emit(GameEvents.GAME_PAUSE,false);
+            
         }); 
 //            .setInteractive(); // 뒤쪽 인게임 클릭 차단
 
@@ -342,7 +348,7 @@ export default class UIScene extends Phaser.Scene {
 
         resumeBtn.on('pointerdown', () => {
             // UIScene -> GameScene으로 재개 이벤트 발송
-            this.events.emit(GameEvents.GAME_RESUMED);
+            this.registry.events.emit(GameEvents.GAME_PAUSE,false);
         });
 
         // 메인 메뉴로 이동 버튼

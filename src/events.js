@@ -6,6 +6,10 @@ export const GameEvents = {
     INVENTORY_UPDATED: 'inventory-updated',
     USE_ITEM: 'use-item',
     USE_SKILL_CLICKED: 'use-skill-clicked',
-    TOGGLE_PAUSE: 'toggle-pause',
-    GAME_RESUMED: 'game-resumed'
+
+    GAME_PAUSE: 'pause',
+    GAME_RESUMED: 'resumed',
+    TURN_END:'turnEnd',
+    TILE_CLICKED:'tileClicked',
+    MOVE_POINT:'movePoint',
 };
