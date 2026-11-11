@@ -130,6 +130,7 @@ export default class metaMap extends Phaser.Scene {
         let dobuleClickedTile = null;
         this.events.on(GameEvents.TILE_CLICKED, (clickedTile) => {
             uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
+            
 
             // 1. 이미 진행 중인 더블클릭 타이머가 있다면 -> '두 번째 클릭' (더블탭 성공!)
             if (this.doubleClickTimer!=null ) {
@@ -146,6 +147,8 @@ export default class metaMap extends Phaser.Scene {
 
                 return; // 단일 클릭 로직이 타지 않도록 종료
             }
+            
+
             dobuleClickedTile ={q: clickedTile.q , r:clickedTile.r}
             // 2. 타이머가 없다면 -> '첫 번째 클릭'
             // 일정 시간 동안 두 번째 클릭이 들어오지 않으면 단일 클릭으로 확정하는 타이머 생성
@@ -201,7 +204,7 @@ export default class metaMap extends Phaser.Scene {
             //데이터 종료 버튼 누를 시 자원 계산
             
             const res = this.calculateResource(isTurnEnd);
-           console.warn('turnEnd', res[1])
+           console.warn('turnEnd', res[1]);
             if(isTurnEnd){
                 //턴 종료 시
                 //turn ++ 
@@ -297,17 +300,21 @@ export default class metaMap extends Phaser.Scene {
                                     res[team].house += fs.amount;
                                     break;
                             }
-                            switch(fs.name){
-                                case 'junkMine':
-                                   // console.log(fs.labor)
-                                    res[team].misc += delta *fs.labor;
-                                    fs.amount -= delta *fs.labor;
-                                    break;
-                                case 'redwood':
-                                    res[team].misc += delta *fs.labor;
-                                    fs.amount -= delta *fs.labor;
-                                    break;
+                            if(isEndTurn){
+                                //턴 넘길 때만 계산하기
+                                 switch(fs.name){
+                                    case 'junkMine':
+                                    // console.log(fs.labor)
+                                        res[team].misc += delta *fs.labor;
+                                        fs.amount -= delta *fs.labor;
+                                        break;
+                                    case 'redwood':
+                                        res[team].misc += delta *fs.labor;
+                                        fs.amount -= delta *fs.labor;
+                                        break;
+                                }
                             }
+                           
                         }else{
                             //자원 소진의 경우
                             fs.amount = 0;

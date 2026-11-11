@@ -14,13 +14,13 @@ export const TERRAIN_TYPES = {
 };
 
 export const Facility={
-    redwood:{name:'redwood',        type:'resource', resource:'wood',labor:0,  amount:100, maxAmount:100},
+    redwood:{name:'redwood',        type:'resource', resource:'wood',labor:0,  amount:1000, maxAmount:1000},
     water:{name:'water',            type:'resource', resource:'water',labor:0,  amount:-1, maxAmount:-1},
     WaterPump:{name:'waterPump',    type:'', resource:'water'},
     Well:{name:'well',              type:'storage', resource:'water'},
     GasStation:{name:'gasStation',  type:'storage', resource:'gas',labor:0,  amount:100, maxAmount:100},
     GasTank:{name:'gasStation',     type:'storage', resource:'gas',labor:0,  amount:500, maxAmount:500},
-    JunkMine:{name:'junkMine',      type:'mine', resource:'misc', labor:0, amount:100, maxAmount:100},
+    JunkMine:{name:'junkMine',      type:'mine', resource:'misc', labor:0, amount:500, maxAmount:500},
     Apartment:{name:'apartment',            type:'house', amount:10},
     BoardingHouse:{name:'boardingHouse',    type:'house', amount:5 }
 }
