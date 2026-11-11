@@ -14,20 +14,33 @@ export const TERRAIN_TYPES = {
 };
 
 export const Facility={
-    redwood:{name:'redwood',        type:'resource', resource:'wood',labor:0,  amount:1000, maxAmount:1000},
-    water:{name:'water',            type:'resource', resource:'water',labor:0,  amount:-1, maxAmount:-1},
-    WaterPump:{name:'waterPump',    type:'', resource:'water'},
-    Well:{name:'well',              type:'storage', resource:'water'},
-    GasStation:{name:'gasStation',  type:'storage', resource:'gas',labor:0,  amount:100, maxAmount:100},
-    GasTank:{name:'gasStation',     type:'storage', resource:'gas',labor:0,  amount:500, maxAmount:500},
-    JunkMine:{name:'junkMine',      type:'mine', resource:'misc', labor:0, amount:500, maxAmount:500},
-    Apartment:{name:'apartment',            type:'house', amount:10},
-    BoardingHouse:{name:'boardingHouse',    type:'house', amount:5 }
+    redwood:{name:'redwood',        isDemol:false, type:'resource', resource:'wood',labor:0, maxLabor:20,  amount:1000, maxAmount:1000},
+    water:{name:'water',            isDemol:false,type:'resource', resource:'water',  amount:-1, maxAmount:-1},
+    WaterPump:{name:'waterPump',    isDemol:true,type:'resource', resource:'water'},
+    Well:{name:'well',              isDemol:true,type:'storage', resource:'water'},
+    GasStation:{name:'gasStation',  isDemol:false,type:'storage', resource:'gas',labor:0,  amount:100, maxAmount:100},
+    GasTank:{name:'gasStation',     isDemol:false,type:'storage', resource:'gas',labor:0,  amount:500, maxAmount:500},
+    JunkMine:{name:'junkMine',      isDemol:false,type:'mine', resource:'misc', labor:0, maxLabor:10, amount:500, maxAmount:500},
+    MouseFarm:{name:'mouseFarm',    isDemol:true,type:'farm', resource:'food', labor:0, maxLabor:2, amount:100, maxAmount:100 },
+    Apartment:{name:'apartment',    isDemol:false,        type:'house', amount:10 },
+    BoardingHouse:{name:'boardingHouse', isDemol:true,   type:'house', amount:10 },
+    BaseCamp:{name:'basecamp',      isDemol:true, type:'house',   amount:4}
 }
-export class facility extends Phaser.GameObjects.Container {
-    constructor(scene ){
-
+/**
+ * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수
+ * @param {string} facilityKey - 예: 'GasTank', 'JunkMine' 등
+ * @returns {Object|null} 독립된 속성을 가진 시설 데이터 객체
+ */
+export function createFacilityData(facilityKey) {
+    const template = facilityKey;
+    
+    if (!template) {
+        console.warn(`[Facility] 존재하지 않는 시설 타입입니다: ${facilityKey}`);
+        return null;
     }
+
+    // 전개 연산자(...)를 사용해 원본과 참조가 끊긴 새로운 객체(복사본) 반환
+    return { ...template };
 }
 
 export class HexTile extends Phaser.GameObjects.Container {

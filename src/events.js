@@ -12,4 +12,5 @@ export const GameEvents = {
     TURN_END:'turnEnd',
     TILE_CLICKED:'tileClicked',
     MOVE_POINT:'movePoint',
+    RENDER_TILE:'renderTile'
 };

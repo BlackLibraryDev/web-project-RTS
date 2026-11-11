@@ -1,6 +1,7 @@
 // src/mainMenu.js
 import { LanguageData } from './translate.js';
 import { GameOptions } from './core/option.js';
+import { GameData } from './core/data.js';
 
 export default class MainMenuScene extends Phaser.Scene {
     constructor() {
@@ -16,6 +17,7 @@ export default class MainMenuScene extends Phaser.Scene {
             .setInteractive({ useHandCursor: true });
 
         startButton.on('pointerdown', () => {
+            GameData.load();
             this.scene.start('GameScene');
         });
         

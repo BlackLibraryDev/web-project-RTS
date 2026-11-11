@@ -2,7 +2,7 @@ import { LanguageData } from './translate.js';
 import { GameOptions } from './core/option.js';
 
 import { generateRectangularNoiseMap } from './mapGenerator.js';
-import { HEX_SIZE , HexTile, TERRAIN_TYPES , Facility } from './HexTile.js';
+import { HEX_SIZE , HexTile, TERRAIN_TYPES , createFacilityData, Facility } from './HexTile.js';
 
 import { Unit } from './Unit.js';
 import { getHexLine , axialToPixel } from './hexUtils.js';
@@ -65,17 +65,17 @@ export default class metaMap extends Phaser.Scene {
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
                    
-                    facilityList.push( this.objectCopy(Facility.redwood));
+                    facilityList.push( createFacilityData(Facility.redwood));
                 }
 
                 if(terrainType.name=='water'){
                     facilityList.push( Facility.water )
                 }
                 if(terrainType.name=='field'){
-                    if(Math.random()< 0.4)  facilityList.push( this.objectCopy(Facility.Apartment)); 
-                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.BoardingHouse)); 
-                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.Well));
-                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy(Facility.JunkMine));
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData(Facility.Apartment)); 
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.BoardingHouse)); 
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.Well));
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.JunkMine));
                     
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'scout', type:'infantry', amount:1})}
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'anti-drone team', type:'infantry', amount:1})}
@@ -103,15 +103,15 @@ export default class metaMap extends Phaser.Scene {
 
 
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
-        const startingPoint = this.randomStartingPoint();
-        this.hexTileFogVisible(startingPoint.r, startingPoint.q);
-        const playerTile = startingPoint.playerTile;
+        this.startingPoint = this.randomStartingPoint();
+        this.hexTileFogVisible(this.startingPoint.r, this.startingPoint.q);
+        const playerTile = this.startingPoint.playerTile;
         playerTile.team =1; 
         for(let i = 0; i<playerTile.garrison.length ; i++){
             playerTile.garrison[i].team = 1;
         }
-        this.centerCameraOnTile(startingPoint.r, startingPoint.q);
-        //uiScene.setTileInfo(this.mapDatas[startingPoint.r][startingPoint.q])
+        this.centerCameraOnTile(this.startingPoint.r, this.startingPoint.q);
+        //uiScene.setTileInfo(this.mapDatas[this.startingPoint.r][this.startingPoint.q])
 
 
         // 2. 맵 데이터 바탕으로 인스턴스 배치
@@ -122,7 +122,7 @@ export default class metaMap extends Phaser.Scene {
         // 3. 카메라 드래그 이동 설정
         this.setupCameraControls();
 
-        this.player //  = new Unit(this, { tag: 'unit_commandVan', q: startingPoint.q, r: startingPoint.r });
+        this.player //  = new Unit(this, { tag: 'unit_commandVan', q: this.startingPoint.q, r: this.startingPoint.r });
         
         // 2. 타일 클릭 이벤트 수신
         // 더블탭 판정을 위한 시간 제한 (밀리초 단위, 보통 250ms ~ 350ms가 적당)
@@ -200,6 +200,11 @@ export default class metaMap extends Phaser.Scene {
             //uiScene.setTileInfo(this.mapDatas[pos.r][pos.q])
             
         });
+         this.events.on(GameEvents.RENDER_TILE, (data) =>{
+            this.mapDatas[data.r][data.q].team = data.team;
+            this.renderHexTile( data.r, data.q);
+            
+        });
         this.registry.events.on(GameEvents.TURN_END, (isTurnEnd=false) =>{
             //데이터 종료 버튼 누를 시 자원 계산
             
@@ -225,6 +230,11 @@ export default class metaMap extends Phaser.Scene {
             this.doubleClickTimer =null;
             console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
+    }
+    calculatePath(q,r){
+        const path = findHexPath(this.startingPoint.q, this.startingPoint.r, q, r, this.tileMap);
+        
+        return path;
     }
 
     randomStartingPoint(){
@@ -253,9 +263,9 @@ export default class metaMap extends Phaser.Scene {
                     array[i].type = TERRAIN_TYPES.VIL;
                     array[i].name = TERRAIN_TYPES.VIL.name
                     let facilityList =[]
-                    if(Math.random()< 0.4)  facilityList.push( this.objectCopy( Facility.Apartment))
-                    if(Math.random()< 0.3)  facilityList.push( this.objectCopy( Facility.BoardingHouse));
-                    if(Math.random()< 0.9)  facilityList.push( this.objectCopy( Facility.JunkMine));
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( Facility.Apartment))
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData( Facility.BoardingHouse));
+                    if(Math.random()< 0.9)  facilityList.push( createFacilityData( Facility.JunkMine));
                     array[i].facility = facilityList;
                 }
             }
@@ -302,6 +312,16 @@ export default class metaMap extends Phaser.Scene {
                             }
                             if(isEndTurn){
                                 //턴 넘길 때만 계산하기
+                                if(fs.labor>0){
+                                    res[team][fs.resource] += delta *fs.labor;
+                                    fs.amount -= delta *fs.labor;
+                                    
+                                    if(fs.type=='farm'){
+                                        //농사의 경우 재충전
+                                        if(fs.amount<=0) fs.amount = fs.maxAmount;
+                                    }
+                                }
+                                /*
                                  switch(fs.name){
                                     case 'junkMine':
                                     // console.log(fs.labor)
@@ -313,6 +333,7 @@ export default class metaMap extends Phaser.Scene {
                                         fs.amount -= delta *fs.labor;
                                         break;
                                 }
+                                */
                             }
                            
                         }else{
@@ -334,9 +355,9 @@ export default class metaMap extends Phaser.Scene {
         //GameData.save();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
-    hexTileFogVisible( randomR, randomQ) {
+    hexTileFogVisible( r, q) {
         //주변도 밝히기
-        const array = this.hexTileRadious(randomR,randomQ);
+        const array = this.hexTileRadious(r,q);
         for(let i = 0; i <array.length ; i++){
             array[i].explored = true;
         }
@@ -392,6 +413,14 @@ export default class metaMap extends Phaser.Scene {
                 this.tileMap.set(`${q},${r}`, tileInstance);
             }
         }
+    }
+    renderHexTile( r, q){
+       // const terrainId = this.mapdatas[r][q].id;\
+        const terrainType = this.mapDatas[r][q].type;
+        const team = this.mapDatas[r][q].team;
+        const pos = axialToPixel(q, r);
+        const tileInstance = new HexTile(this, pos.x, pos.y, q, r, terrainType, team );
+        this.tileMap.set(`${q},${r}`, tileInstance);
     }
     clearFogMap(){
         // 기존 타일 인스턴스 제거

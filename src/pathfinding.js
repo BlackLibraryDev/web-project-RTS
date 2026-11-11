@@ -78,7 +78,7 @@ export function findHexPath(startQ, startR, targetQ, targetR, tileMap) {
             while (temp) {
                 // 탐색 중인 현재 노드의 좌표와 이웃 노드의 좌표를 콘솔에 출력
                 //console.log(`현재 탐색중: q=${current.q}, r=${current.r} (행 홀짝: ${current.r % 2})`);
-                path.unshift({ q: temp.q, r: temp.r });
+                path.unshift({ q: temp.q, r: temp.r , moveCost:temp.moveCost});
                 temp = temp.parent;
             }
            // console.log(`[Pathfinder] 경로 탐색 성공! 총 ${path.length}개 타일 이동`);
