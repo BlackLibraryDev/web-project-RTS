@@ -105,17 +105,41 @@ export default class UIScene extends Phaser.Scene {
             const items = this.subTileInfoContainer.items;
             items.titleText.setText( LanguageData.getText( data.tag ) );
             items.laborText.setText( `Labor: ${data.labor}`);
-
+            
+            let spentTxt = '';
+            if(data.spentResource!=null){
+                for(let i = 0; i < this.tileData.facility.length ; i++){
+                    if(this.tileData.facility[i] == data){
+                        const spent = data.spentResource;
+                        Object.keys(spent).forEach((item) => {
+                            spentTxt += `${item} +${Math.abs(spent[item])/2}`;
+                        });
+                        break;
+                    }
+                }
+            }
+            
+            items.btDel.nameTxt.setText( LanguageData.getText('demolition')+`${spentTxt.length>0?' ('+spentTxt+')'  :''}`)
             items.btDel.off('pointerdown');
             items.btDel.on('pointerdown', () => {
                 for(let i = 0; i < this.tileData.facility.length ; i++){
                     if(this.tileData.facility[i] == data){
-                        const player = GameData.saveData;
-                        if(data.labor!=null)  player.manPower+= data.labor;
+
+                        if(data.labor!=null)  GameData.saveData.manPower+= data.labor;
+                        const spent = data.spentResource;
+                        
+                        Object.keys(spent).forEach((item) => {
+                            //건설비 절반 반환
+                            spent[item] =Math.abs(spent[item])/2
+                            GameData.saveData[item] += spent[item];
+                        })
+
+
                         this.tileData.facility.splice(i,1);
                         this.renderSubTileInfo(null,false);
                         this.forceUpdateTileInfo();
-                        this.renderResourceBar();
+                        this.renderResourceBar([null, spent ]);
+                        
                         break;
                     }
                 }
@@ -204,12 +228,25 @@ export default class UIScene extends Phaser.Scene {
                     const ct = this.make_tileInfoContainer(1, addList[n], items.startX+15, items.startY +60 + n*60);
                     ct.off('pointerDown');
                     ct.on('pointerdown', () => {
-                        //클릭 시 
+                        //클릭 시 건물 추가
+                        const spent = ct.itemData.spentResource;
+                        Object.keys(spent).forEach((item) => {
+                           // console.log(item, spent[item])
+                           if(GameData.saveData[item] < Math.abs(spent[item]) ){
+                                console.warn('자원이 부족합니다');
+                                return;
+                           }else{
+                                spent[item] = -Math.abs(spent[item])
+                           }
+                        });
+                        Object.keys(spent).forEach((item) => {
+                            GameData.saveData[item] += spent[item] ;
+                        })
                         this.tileData.facility.push( ct.itemData );
                         
                         //this.registry.events.emit(GameEvents.TURN_END, false);
                         this.forceUpdateTileInfo();
-                        this.renderResourceBar();
+                        this.renderResourceBar([null, spent ]);
                         this.renderSubTileInfo(null,false);
                     });
                     items.list.push( ct );
@@ -326,7 +363,7 @@ export default class UIScene extends Phaser.Scene {
         
         let num = ''
         if(data.labor!=null ) num = '('+data.labor+')';
-        //if(data.type == 'house') num = '(+'+ data.amount +')';
+        if(data.type == 'house') num = '(+'+ data.amount +')';
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(20);
 
@@ -521,7 +558,7 @@ export default class UIScene extends Phaser.Scene {
         }
         
     }
-    renderResourceBar( res =null ){
+    renderResourceBar( res =null, turnEnd =false ){
         const ctn = this.resourceContainer;
         const manpower = {baby:0, child:0, adult:0, house:0 }
         ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
@@ -537,17 +574,20 @@ export default class UIScene extends Phaser.Scene {
         ctn.fuelText.setText(`${data.fuel}/1000`);
 
         if(res !=null){
-            this.turn.week++;
-            if(this.turn.week>52) {
-                this.turn.week =1;
-                this.turn.year++
+            if(turnEnd){
+                this.turn.week++;
+                if(this.turn.week>52) {
+                    this.turn.week =1;
+                    this.turn.year++
+                }
             }
+            
             
             Object.keys(res[1]).forEach((item) => {
                // console.log(`${item}:${res[1][item]}`)
                 if(ctn[item] !=null){
                     if(res[1][item]!=0){
-                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `+${res[1][item]}`);
+                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`);
                     }
                     
                 }

@@ -102,7 +102,32 @@ export function createFacilityData(facilityKey) {
         console.warn(`[Facility] 존재하지 않는 시설 타입입니다: ${facilityKey}`);
         return null;
     }
+    //특정 랜덤값 계산
+    const data = { ...template };
+    if(data.type =='house'){
+        //집 공간 랜덤값
+        if(data.maxAmount !=null){
+            data.amount = Phaser.Math.Between( 0, data.maxAmount);
+        }
+    }
+    if(data.type=='mine'){
+        //광산 자원 랜덤값
+        data.amount = Phaser.Math.Between( 0, data.maxAmount);
+    }
+    if(data.spentResource!=null){
+        const spentResource = data.spentResource.split(';');
+        let spent ={};
+        for(let i =0 ; i< spentResource.length ; i++){
+            if(spentResource[i].length>0){
+                const value = spentResource[i].split(':');
+                spent[value[0]] = Number(value[1])
+            }
+            
+        }
+        data.spentResource = spent;
+    }
+    
 
     // 전개 연산자(...)를 사용해 원본과 참조가 끊긴 새로운 객체(복사본) 반환
-    return { ...template };
+    return data
 }

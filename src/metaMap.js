@@ -76,9 +76,9 @@ export default class metaMap extends Phaser.Scene {
                     if(Math.random()< 0.3)  facilityList.push( createFacilityData('boardingHouse')); 
                     if(Math.random()< 0.3)  facilityList.push( createFacilityData('junkMine'));
                     
-                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'scout', type:'infantry', amount:1})}
-                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'anti-drone team', type:'infantry', amount:1})}
-                    if(Math.random()<0.2)  {teamNum=2;  garrisonList.push( {team:2, name:'rifleman', type:'infantry', amount:1})}
+                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'scout', type:'infantry', amount:1})}
+                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'anti-drone team', type:'infantry', amount:1})}
+                    if(Math.random()<0.2)  {teamNum=2;  garrisonList.push( {team:2, tag:'rifleman', type:'infantry', amount:1})}
                 }
 
                 
@@ -208,7 +208,7 @@ export default class metaMap extends Phaser.Scene {
             //데이터 종료 버튼 누를 시 자원 계산
             
             const res = this.calculateResource(isTurnEnd);
-           console.warn('turnEnd', res[1]);
+           
             if(isTurnEnd){
                 //턴 종료 시
                 //turn ++ 
@@ -217,8 +217,9 @@ export default class metaMap extends Phaser.Scene {
                     //console.log(`${item}:${res[1][item]}`)
                     player[item]+= res[1][item];
                 })
+                console.warn('turnEnd', res[1]);
             }
-            uiScene.renderResourceBar( res);
+            uiScene.renderResourceBar( res, isTurnEnd );
             
         });
 
@@ -262,6 +263,7 @@ export default class metaMap extends Phaser.Scene {
                     array[i].type = TERRAIN_TYPES.VIL;
                     array[i].name = TERRAIN_TYPES.VIL.name
                     let facilityList =[]
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
                     if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
                     if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));
                     if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
@@ -314,25 +316,15 @@ export default class metaMap extends Phaser.Scene {
                                 if(fs.labor>0){
                                     res[team][fs.resource] += delta *fs.labor;
                                     fs.amount -= delta *fs.labor;
+                                    if(fs.amount <0){
+                                        res[team][fs.resource] += fs.amount;
+                                    }
                                     
                                     if(fs.type=='farm'){
                                         //농사의 경우 재충전
                                         if(fs.amount<=0) fs.amount = fs.maxAmount;
                                     }
                                 }
-                                /*
-                                 switch(fs.name){
-                                    case 'junkMine':
-                                    // console.log(fs.labor)
-                                        res[team].misc += delta *fs.labor;
-                                        fs.amount -= delta *fs.labor;
-                                        break;
-                                    case 'redwood':
-                                        res[team].misc += delta *fs.labor;
-                                        fs.amount -= delta *fs.labor;
-                                        break;
-                                }
-                                */
                             }
                            
                         }else{
