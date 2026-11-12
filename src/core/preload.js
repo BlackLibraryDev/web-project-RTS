@@ -1,5 +1,5 @@
 // src/preload.js
-import { GameData } from './data.js';
+import { GameData , parseTSVToMap } from './data.js';
 import { LanguageData } from '../translate.js';
 
 export default class PreloadScene extends Phaser.Scene {
@@ -11,6 +11,8 @@ export default class PreloadScene extends Phaser.Scene {
         // 1. TSV 파일을 텍스트 형식으로 로드 (경로는 assets에 두는 것 권장)
         this.load.text('translations', 'assets/data/translations.tsv');
 
+        this.load.text('facilities_tsv', 'assets/data/facilities.tsv');
+
         // 지형별 스프라이트 이미지 로드 (파일명은 자유롭게 지정)
         this.load.image('tile_fog', 'assets/tiles/fog.png');
         this.load.image('tile_water', 'assets/tiles/water.png');
@@ -21,6 +23,8 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.spritesheet('unit_commandVan', 'assets/commandVan.png', { frameWidth: 256 , frameHeight: 256 });
         GameData.load();
+
+
         // 에셋 로드 코드...
     }
 
@@ -34,6 +38,11 @@ export default class PreloadScene extends Phaser.Scene {
         // 4. 저장된 기존 언어 설정 복원 (기본값: ko)
         const savedLang = localStorage.getItem('game_language') || 'ko';
         LanguageData.setLanguage(savedLang);
+
+        //facilitis 불러오기
+        const facilities = parseTSVToMap(this.cache.text.get('facilities_tsv'), 'tag');
+        GameData.init(facilities ,null,null);
+        //console.log(GameData.facilities.gasTank.amount); // 500
 
         this.anims.create({
             key: 'unit_commandVan_idle',

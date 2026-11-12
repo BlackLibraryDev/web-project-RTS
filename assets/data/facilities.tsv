@@ -1,0 +1,12 @@
+tag	isDemol	type	resource	labor	maxLabor	amount	maxAmount
+redwood	FALSE	resource	wood	0	20	1000	1000
+water	FALSE	resource	water			-1	-1
+waterPump	TRUE	resource	water				
+well	TRUE	storage	water				
+gasStation	FALSE	storage	gas	0		100	100
+gasStation	FALSE	storage	gas	0		500	500
+junkMine	FALSE	mine	misc	0	10	500	500
+mouseFarm	TRUE	farm	food	0	2	100	100
+apartment	FALSE	house				10	
+boardingHouse	TRUE	house				10	
+baseCamp	TRUE	house				4	

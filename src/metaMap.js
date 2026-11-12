@@ -2,14 +2,14 @@ import { LanguageData } from './translate.js';
 import { GameOptions } from './core/option.js';
 
 import { generateRectangularNoiseMap } from './mapGenerator.js';
-import { HEX_SIZE , HexTile, TERRAIN_TYPES , createFacilityData, Facility } from './HexTile.js';
+import { HEX_SIZE , HexTile, TERRAIN_TYPES } from './HexTile.js';
 
 import { Unit } from './Unit.js';
 import { getHexLine , axialToPixel } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
-import { GameData } from './core/data.js';
+import { GameData, createFacilityData } from './core/data.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -65,17 +65,16 @@ export default class metaMap extends Phaser.Scene {
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
                    
-                    facilityList.push( createFacilityData(Facility.redwood));
+                    facilityList.push( createFacilityData('redwood'));
                 }
 
                 if(terrainType.name=='water'){
-                    facilityList.push( Facility.water )
+                    facilityList.push( createFacilityData('water'))
                 }
                 if(terrainType.name=='field'){
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData(Facility.Apartment)); 
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.BoardingHouse)); 
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.Well));
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData(Facility.JunkMine));
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData('apartment')); 
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData('boardingHouse')); 
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData('junkMine'));
                     
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'scout', type:'infantry', amount:1})}
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, name:'anti-drone team', type:'infantry', amount:1})}
@@ -263,9 +262,9 @@ export default class metaMap extends Phaser.Scene {
                     array[i].type = TERRAIN_TYPES.VIL;
                     array[i].name = TERRAIN_TYPES.VIL.name
                     let facilityList =[]
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( Facility.Apartment))
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData( Facility.BoardingHouse));
-                    if(Math.random()< 0.9)  facilityList.push( createFacilityData( Facility.JunkMine));
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
+                    if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));
+                    if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
                     array[i].facility = facilityList;
                 }
             }

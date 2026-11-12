@@ -1,8 +1,7 @@
 // src/UIscene.js
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
-import { GameData } from './core/data.js';
-import { Facility , createFacilityData} from './HexTile.js';
+import { GameData, createFacilityData } from './core/data.js';
 
 export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
 
@@ -104,7 +103,7 @@ export default class UIScene extends Phaser.Scene {
         this.subTileInfoContainer.setVisible(isVisible);
         if(isVisible){
             const items = this.subTileInfoContainer.items;
-            items.titleText.setText( LanguageData.getText( data.name ) );
+            items.titleText.setText( LanguageData.getText( data.tag ) );
             items.laborText.setText( `Labor: ${data.labor}`);
 
             items.btDel.off('pointerdown');
@@ -185,7 +184,9 @@ export default class UIScene extends Phaser.Scene {
             }
 
             if(data.type =='house'){
-                
+                items.btDown.setVisible(false);
+                items.btUp.setVisible(false);
+                items.laborText.setVisible(false)
                 items.resourceText.setVisible(true);
                 items.resourceText.setText( `house upkeep: +${data.amount}`);
             }
@@ -198,7 +199,7 @@ export default class UIScene extends Phaser.Scene {
             if(data.add!=null){
                 //무언가 추가하는 경우
                 items.list = [];
-                const addList = [createFacilityData(Facility.BaseCamp), createFacilityData(Facility.MouseFarm)];
+                const addList = [createFacilityData('baseCamp'), createFacilityData('mouseFarm')];
                 for(let n = 0 ; n<addList.length; n++){
                     const ct = this.make_tileInfoContainer(1, addList[n], items.startX+15, items.startY +60 + n*60);
                     ct.off('pointerDown');
@@ -323,7 +324,10 @@ export default class UIScene extends Phaser.Scene {
         const bgcolor = data.team? ( data.team >1 ? 0xff4f4f :  0x2cb9ff  ) : ( 0x000000 ); 
         const bg = this.add.rectangle(0,0, width,height, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         
-        let name =`${ LanguageData.getText(data.name)} ${ data.labor!=null? '('+data.labor+')':''}` 
+        let num = ''
+        if(data.labor!=null ) num = '('+data.labor+')';
+        //if(data.type == 'house') num = '(+'+ data.amount +')';
+        let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(20);
 
         let text = `${data.type} ${data.resource? ': '+data.resource :''}`
@@ -394,18 +398,19 @@ export default class UIScene extends Phaser.Scene {
             }
 
             const metaMap = this.scene.get('metaMap');
-            let obj = { name:'(add Facility)', type:'', add:'facility'};
+            let obj = { tag:'addFacility', type:'', add:'facility'};
             let color = 0x43c563;
             if(tileData.team<1){
                 
-                obj = { name:'(capture the sector)', type:'', conquest:true};
+                obj = { tag:'captureTheSector', type:'', conquest:true};
                 color = 0xffe449;
             }
             if(tileData.team>1){
-                obj = { name:'(attack)', type:'', conquest:true};
+                obj = { tag:'attack', type:'', conquest:true};
                 color =0xff2d2a;
             }
-                 const addFacilityBt = this.make_tileInfoContainer(tileData.team,obj, 
+            
+                 const addFacilityBt = this.make_tileInfoContainer(tileData.team, obj, 
                     items.facilityContainer.x+15, items.facilityContainer.y + tileData.facility.length*70 +45,
                     color);
                  addFacilityBt.on('pointerdown', () => {
@@ -465,7 +470,7 @@ export default class UIScene extends Phaser.Scene {
             
             }
             if(tileData.team==1){
-                 const addGarrisonBt = this.make_tileInfoContainer(tileData.team, {name:'(add Garrison)', type:'' ,add:'garrison'}, 
+                 const addGarrisonBt = this.make_tileInfoContainer(tileData.team, {tag:'add Garrison', type:'' ,add:'garrison'}, 
                     items.garrisonContainer.x+15, items.garrisonContainer.y + tileData.garrison.length*70 +45,
                     0x43c563);
                 items.garrisonList.push(addGarrisonBt);
