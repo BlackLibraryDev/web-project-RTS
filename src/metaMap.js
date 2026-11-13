@@ -106,6 +106,12 @@ export default class metaMap extends Phaser.Scene {
         this.hexTileFogVisible(this.startingPoint.r, this.startingPoint.q);
         const playerTile = this.startingPoint.playerTile;
         playerTile.team =1; 
+        if(Object.keys( playerTile.facility).find((key) => playerTile.facility[key].type === 'house')){
+            //console.log('집이 있음')
+        }else{
+            playerTile.facility.push( createFacilityData( 'baseCamp') )
+        }
+        
         for(let i = 0; i<playerTile.garrison.length ; i++){
             playerTile.garrison[i].team = 1;
         }
@@ -231,8 +237,8 @@ export default class metaMap extends Phaser.Scene {
             console.log('GameScene 종료: 타일 클릭 이벤트 리스너 해제됨');
         });
     }
-    calculatePath(q,r){
-        const path = findHexPath(this.startingPoint.q, this.startingPoint.r, q, r, this.tileMap);
+    calculatePath(q,r, airPath=false){
+        const path = findHexPath(this.startingPoint.q, this.startingPoint.r, q, r, this.tileMap, airPath);
         
         return path;
     }
@@ -287,10 +293,12 @@ export default class metaMap extends Phaser.Scene {
         const res0 = {
             house :0,
             manPower:0,
+            birth:0,
+            death:0,
             ammo:0,
             misc:0,
             food:0,
-            fuel:0
+            fuel:0,
         }
         const res = [this.objectCopy(res0) , this.objectCopy(res0), this.objectCopy(res0) ] ;
         for(let r = 0; r < this.mapDatas.length; r++) {
@@ -301,6 +309,7 @@ export default class metaMap extends Phaser.Scene {
                 const team = mapdata.team;
                 
                 for(let i = 0; i < facility.length ; i++){
+                    //시설물 보너스 계산 
                     const fs = facility[i];
                     if(fs.amount!=null ){
                         if(fs.amount>0){
@@ -339,7 +348,31 @@ export default class metaMap extends Phaser.Scene {
                 
             }
         }
-        
+        if(isEndTurn){
+            //식량 소모
+            //const data = GameData.saveData;
+            for(let i = 0 ;i <data.pop.length ; i++){
+                const person = data.pop[i];
+                
+                if(data.food >0){
+                    data.food --;
+                    console.log(data.food)
+                    res[1].food--;
+                }else{
+                    person.hunger -= 1;
+                }
+                if(person.hunger<=0){
+                    res[1].death++;
+                    console.warn(`${person.tag}가 굶주림으로 사망했습니다/탈주했습니다` );
+                    data.pop.splice(i,1);
+                    i--;
+
+                }
+            }
+            //우선 값을 복원해줌
+            data.food -= res[1].food;
+        }
+
         data.house = res[1].house;
         
         return res;

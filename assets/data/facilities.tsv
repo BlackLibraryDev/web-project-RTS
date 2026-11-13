@@ -6,6 +6,6 @@ well	TRUE	storage	water
 gasStation	FALSE	storage	gas	0		500	500		
 junkMine	FALSE	mine	misc	0	10	500	500		
 apartment	FALSE	house				2	20		
-boardingHouse	TRUE	house				2	8	misc:30;	
-baseCamp	TRUE	house				4		misc:20;	
-mouseFarm	TRUE	farm	food	0	2	100	100	misc:30;	
+boardingHouse	TRUE	house				2	8	misc:120;	
+baseCamp	TRUE	house				4		misc:80;	
+mouseFarm	TRUE	farm	food	0	2	100	100	misc:50;	

@@ -36,7 +36,7 @@ function getOddRDistance(q1, r1, q2, r2) {
     );
 }
 
-export function findHexPath(startQ, startR, targetQ, targetR, tileMap) {
+export function findHexPath(startQ, startR, targetQ, targetR, tileMap , airPath =false) {
     // ⭕ [디버깅] 함수 진입 시 시작점과 목적지 좌표 출력
     //console.log(`[Pathfinder] 길찾기 요청 -> 시작점: (${startQ}, ${startR}) / 목적지: (${targetQ}, ${targetR})`);
 
@@ -49,7 +49,7 @@ export function findHexPath(startQ, startR, targetQ, targetR, tileMap) {
     }
     
     const targetTile = tileMap.get(targetKey);
-    if (targetTile.terrain && !targetTile.terrain.isWalkable) {
+    if (targetTile.terrain && !targetTile.terrain.isWalkable && airPath==false) {
         console.warn(`[Pathfinder] 목적지(${targetQ}, ${targetR})가 이동 불가능한 지형입니다.`);
         return [];
     }
@@ -98,7 +98,7 @@ export function findHexPath(startQ, startR, targetQ, targetR, tileMap) {
             if (closedSet.has(neighborKey)) continue;
 
             const neighborTile = tileMap.get(neighborKey);
-            if (!neighborTile || (neighborTile.terrain && !neighborTile.terrain.isWalkable)) continue;
+            if (!neighborTile || (neighborTile.terrain && !neighborTile.terrain.isWalkable && airPath==false)) continue;
 
             const moveCost = neighborTile.terrain ? neighborTile.terrain.moveCost : 1;
             const tentativeG = current.g + moveCost;

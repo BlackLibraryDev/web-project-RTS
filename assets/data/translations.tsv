@@ -1,13 +1,17 @@
 key	ko	en
 language	한국어	English
 btn_start	시작하기	Start
-game_title	project RTS	project RTS
+game_title	지즈 : 천상의 전쟁	Ziz - War in Heaven
 paused	일시정지	Paused
 resume	계속하기	Resume
 main_menu	메인 메뉴	Main Menu
 facility	시설	Facility
 garrison	주둔군	Garrison
 demolition	시설 해체	Demolition
+captureTheSector	지역 점령	Capture the sector
+addFacility	시설 추가	Add facility
+addGarrisoin	주둔군 추가	Add Garrison
+labor	노동자	Labor
 fog	안개	Fog
 vil	폐허	Ruind
 field	평지	Field
@@ -19,3 +23,13 @@ mouseFarm	쥐 농장	Mouse Farm
 apartment	파괴된 아파트	Apartment
 boardingHouse	파괴된 주택지	Boarding house
 baseCamp	노숙 캠프	camp
+txt_capture	지역 점령	Capture the sector
+txt_captureinfo	이 지역을 확보하시겠습니까?	Are you sure about capturing this sector?
+txt_welcome	지즈-천상의 전쟁	Ziz - war in heaven
+txt_welcomeInfo	절망의 세계에 오신 것을 환영합니다. ////세계는 핵전쟁으로 황폐화되었습니다. //당신은 작은 워밴드를 이끌고 세상을 재패하기 시작합니다.	...
+txt_demol	시설 해체	Demolition construction
+txt_demolinfo	정말로 이 시설을 해체하시겠습니까?//자원의 절반을 돌려받습니다.	...
+txt_attack	지역 교전	Skirmish
+txt_attackinfo	지역을 확보하고 적의 잔당을 소탕합니다 	...
+attack_auto	자동전투	Auto
+attack_manual	수동전투(WIP)	Manual skirmish(WIP)

@@ -28,6 +28,7 @@ export default class MainMenuScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         const buildText = this.add.text(10, height-10, build,{fontSize:'16px'}).setOrigin(0,1);
 
+        GameData.reset();
         GameOptions.loadOptions();
     }
 }

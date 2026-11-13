@@ -13,7 +13,7 @@ export default class UIScene extends Phaser.Scene {
     create() {
         const gameScene = this.scene.get('GameScene');
 
-        this.turn = {year:2054 , week:0 };
+        this.turn = {year:2054 , week:1 };
 
         // --------------------------------------------------
         // 2. 일시정지 팝업 메뉴 컨테이너 (초기에는 숨김)
@@ -23,17 +23,14 @@ export default class UIScene extends Phaser.Scene {
         this.make_resourceBar();
         this.make_tileInfo();
         this.make_subTileInfo();
-        this.make_tileDecisionInfo();
+        this.make_tileDecisionInfo(LanguageData.getText('txt_welcome'), LanguageData.getText( 'txt_welcomeInfo'));
         this.registry.events.emit(GameEvents.TURN_END, false);
 
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
         this.endTurnButton.on('pointerdown', () => {
             //턴 넘김
              
-            this.registry.events.emit(GameEvents.TURN_END, true);
-           this.forceUpdateTileInfo();
-            this.renderSubTileInfo(null,false);
-           this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
+            this.turnEnd();
         }); 
         
         // --------------------------------------------------
@@ -54,48 +51,87 @@ export default class UIScene extends Phaser.Scene {
     }
 
 
-    make_tileDecisionInfo(){
+    make_tileDecisionInfo(titleMessage, infoMessage, onConfirm =null , onConfirm2=null){
+        const width = 400;
+        const height = 280;
+        const startX = -width/2;
+        const startY = -100;
+
         this.decisionContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
-        const fontStyle ={
+        const TitlefontStyle ={
             fontFamily:'Arial',
-            fontSize: '24px',
+            fontSize: '28px',
             fill: '#ffffff',
             align: 'center',
             padding:{ x: 2, y: 2 }
         } 
-        const width = 400;
-        const height = 300;
-        const startX = -width/2;
-        const startY = -100;
+         const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '20px',
+            fill: '#ffffff',
+            align: 'center',
+            padding:{ x: 2, y: 2 },
+            wordWrap: {
+                width: width-20, // 줄바꿈이 일어날 최대 가로 너비 (픽셀)
+                useAdvancedWrap: true // 한글/영문 단어 단위 줄바꿈 세부 설정 (선택 사항)
+            }
+        } 
+        const closeModal = ()=>{
+          this.decisionContainer.destroy();
+          this.decisionContainer = null;  
+        };
+
+        
         const menuBg = this.add.rectangle(-width/2,-height/2 +50, width , height ,0x000000,0.7).setStrokeStyle(2,0xffffff)
         .setInteractive().setOrigin(0); // 뒤쪽 인게임 클릭 차단;
         // 어두운 반투명 배경 레이어 (화면 전체 덮기)
         const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0)
         .setInteractive({ useHandCursor: true });
         overlay.on('pointerdown', () => {
-            this.decisionContainer.setVisible(false);
-            
+            closeModal();
         }); 
 
-        const titleTxt = this.add.text(0,startY+10, 'title' ,fontStyle).setOrigin(0.5,0);
+        const titleTxt = this.add.text(0,startY+30, titleMessage ,TitlefontStyle).setOrigin(0.5,0);
+
+        const subTxt = this.add.text(0, startY+80, infoMessage, fontStyle).setOrigin(0.5,0);
         
-        const Btconfirm = this.makeButton(0, startY+height-30, 200, 40, 'confirm', {color:0x2cb9ff});
-        const Bt_A = this.makeButton(-90, startY+height-30, 160, 40, 'confirm', {color:0x2cb9ff});
-        const Bt_B = this.makeButton(+90, startY+height-30, 160, 40, 'cancel');
+        const Btconfirm = this.makeButton(0, startY+height-30, 200, 40, LanguageData.getText('confirm'), {color:0x2cb9ff});
+        const Bt_A = this.makeButton(-90, startY+height-30, 160, 40, LanguageData.getText('confirm'), {color:0x2cb9ff});
+        const Bt_B = this.makeButton(+90, startY+height-30, 160, 40, LanguageData.getText('cancel'));
 
         this.decisionContainer.items={
             titleText:titleTxt,
-            startX:startX,
-            startY:startY,
+            subText:subTxt,
             btConfirm:Btconfirm,
             btA:Bt_A,
             btB:Bt_B
         }
+        
+         
+        Btconfirm.on('pointerdown', ()=>{
+            if(onConfirm) onConfirm();
+            closeModal();
+        });
+        Bt_A.on('pointerdown', ()=>{
+            if(onConfirm) onConfirm();
+            closeModal();
+        });
+        Bt_B.on('pointerdown', ()=>{
+            if(onConfirm2) onConfirm2();
+            closeModal();
+        });
+        if(onConfirm2 !=null){
+            Btconfirm.setVisible(false);
+        }else{
+            Bt_A.setVisible(false);
+            Bt_B.setVisible(false);
+        }
 
-
-        this.decisionContainer.add( [overlay,  menuBg , titleTxt,  Bt_A, Bt_B, Btconfirm]);
-        //this.decisionContainer.setVisible(false);
+        
+        this.decisionContainer.add( [overlay,  menuBg , titleTxt, subTxt,  Bt_A, Bt_B, Btconfirm]);
+        return this.decisionContainer;
     }
+    
     make_subTileInfo(){
         //서브 타일 항목
         this.subTileInfoContainer  = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
@@ -128,7 +164,7 @@ export default class UIScene extends Phaser.Scene {
         const btDel = this.makeButton(startX+150, startY+360, 240,50, LanguageData.getText('demolition'));
         const btUp = this.makeButton(startX+270,startY +110, 40,40, '+');
         const btDown = this.makeButton(startX +30,startY +110, 40,40, '-');
-        const laborTxt = this.add.text(startX+150, startY +110 , `Labor: 0`, {
+        const laborTxt = this.add.text(startX+150, startY +110 , `${LanguageData.getText('labor')}: 0`, {
             fontFamily:'Arial',
             fontSize: '24px',
             fill: '#ffffff',
@@ -156,7 +192,7 @@ export default class UIScene extends Phaser.Scene {
         if(isVisible){
             const items = this.subTileInfoContainer.items;
             items.titleText.setText( LanguageData.getText( data.tag ) );
-            items.laborText.setText( `Labor: ${data.labor}`);
+            items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
             
             let spentTxt = '';
             if(data.spentResource!=null){
@@ -176,21 +212,27 @@ export default class UIScene extends Phaser.Scene {
             items.btDel.on('pointerdown', () => {
                 for(let i = 0; i < this.tileData.facility.length ; i++){
                     if(this.tileData.facility[i] == data){
+                         const confirm2 = ()=>{ };
+                        const confirm1 = ()=>{
+                            //건설 해체
+                            if(data.labor!=null)  GameData.saveData.manPower+= data.labor;
+                            const spent = data.spentResource;
+                            
+                            Object.keys(spent).forEach((item) => {
+                                //건설비 절반 반환
+                                spent[item] =Math.abs(spent[item])/2;
+                                GameData.saveData[item] += spent[item];
+                            })
 
-                        if(data.labor!=null)  GameData.saveData.manPower+= data.labor;
-                        const spent = data.spentResource;
-                        
-                        Object.keys(spent).forEach((item) => {
-                            //건설비 절반 반환
-                            spent[item] =Math.abs(spent[item])/2;
-                            GameData.saveData[item] += spent[item];
-                        })
 
+                            this.tileData.facility.splice(i,1);
+                            this.renderSubTileInfo(null,false);
+                            this.forceUpdateTileInfo();
+                            this.renderResourceBar([null, spent ]);
+                        }
+                        this.make_tileDecisionInfo(LanguageData.getText('txt_demol'),LanguageData.getText('txt_demolinfo'),
+                         confirm1, confirm2);
 
-                        this.tileData.facility.splice(i,1);
-                        this.renderSubTileInfo(null,false);
-                        this.forceUpdateTileInfo();
-                        this.renderResourceBar([null, spent ]);
                         
                         break;
                     }
@@ -204,7 +246,7 @@ export default class UIScene extends Phaser.Scene {
                     if(player.manPower>0 && data.labor < data.maxLabor){
                         player.manPower--;
                         data.labor++
-                        items.laborText.setText( `Labor: ${data.labor}`);
+                        items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
                     }
@@ -217,7 +259,7 @@ export default class UIScene extends Phaser.Scene {
                     if(data.labor>0){
                         player.manPower++;
                         data.labor--
-                        items.laborText.setText( `Labor: ${data.labor}`);
+                        items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
                     }
@@ -514,7 +556,7 @@ export default class UIScene extends Phaser.Scene {
                     }
                     if(tileData.team<1){
                         //지역 점령
-                        const path = metaMap.calculatePath(tileData.q, tileData.r);
+                        const path = metaMap.calculatePath(tileData.q, tileData.r, true);
                         if(path.length ==0){  
                             console.warn('no path'); 
                             return;
@@ -527,18 +569,60 @@ export default class UIScene extends Phaser.Scene {
                                 return;
                             }
                         }
-
-                        tileData.team = 1;
-                        
-                        metaMap.renderHexTile(tileData.r, tileData.q);
-                        metaMap.hexTileFogVisible( tileData.r, tileData.q);
-                        //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
-                        this.forceUpdateTileInfo();
-                        this.renderResourceBar();
-
+                        const confirm2 = ()=>{ };
+                        const confirm1 = ()=>{
+                            //점령 확인
+                            tileData.team = 1;
+                            GameData.saveData.fuel -= path.length;
+                            metaMap.renderHexTile(tileData.r, tileData.q);
+                            metaMap.hexTileFogVisible( tileData.r, tileData.q);
+                            //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
+                            this.forceUpdateTileInfo();
+                            this.renderResourceBar();
+                        }
+                        this.make_tileDecisionInfo(LanguageData.getText('txt_capture'),
+                         `${LanguageData.getText('txt_captureinfo')}\n\n Fuel: -${path.length}`,
+                         confirm1, confirm2);
                     }
                     if(tileData.team>1){
                         //공격
+                        const path = metaMap.calculatePath(tileData.q, tileData.r, true);
+                         const confirm2 = ()=>{ 
+                            //수동공격
+                            //this.scene.close();
+                         };
+                        const confirm1 = ()=>{
+                            //자동공격 (WIP)
+                            //주둔군 편성 및 추가 기능을 넣어야함... 
+                            if(Math.random() < 0.4){
+                                console.warn('패배했습니다')
+                            }else{
+                                console.warn('전투 승리, 지역을 점령합니다.')
+                                tileData.team = 1;
+                                GameData.saveData.fuel -= path.length;
+                                if(tileData.garrison.length>0){
+                                    //주둔군이 있는 경우
+                                    for(let i = 0 ; i < tileData.garrison.length ; i++){
+                                        const inf = tileData.garrison[i];
+                                        inf.team = 1;
+
+                                    }
+                                }
+                                metaMap.renderHexTile(tileData.r, tileData.q);
+                                metaMap.hexTileFogVisible( tileData.r, tileData.q);
+                            }
+                            //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
+                            this.forceUpdateTileInfo();
+                            this.renderResourceBar();
+                            this.turnEnd();
+                        }
+                        const dec = this.make_tileDecisionInfo(
+                            LanguageData.getText('txt_attack'),
+                            `${LanguageData.getText('txt_attackinfo')}\n\n Fuel: -${path.length}` ,
+                         confirm1, confirm2);
+                        dec.items.btA.nameTxt.setText(LanguageData.getText('attack_auto'));
+                        dec.items.btB.nameTxt.setText(LanguageData.getText('attack_manual'));
+                        
                     }
                     
                 });    
@@ -621,7 +705,7 @@ export default class UIScene extends Phaser.Scene {
         const metaMap = this.scene.get('metaMap');
         metaMap.calculateResource(false);
         //인벤토리 구현 및 아이템 sum 후 수치표현
-        ctn.manPowerText.setText(`${data.manPower}/${data.house}`);
+        ctn.manPowerText.setText(`⛏${data.manPower}/👤${data.pop.length}/🏠${data.house}`);
         ctn.ammoText.setText(`${data.ammo}/1000`);
         ctn.foodText.setText(`${data.food}/1000`);
         ctn.miscText.setText(`${data.misc}/1000`);
@@ -638,14 +722,18 @@ export default class UIScene extends Phaser.Scene {
             
             
             Object.keys(res[1]).forEach((item) => {
-               // console.log(`${item}:${res[1][item]}`)
-                if(ctn[item] !=null){
-                    if(res[1][item]!=0){
-                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`);
-                    }
-                    
-                }
+              // console.log(`${item}:${res[1][item]}`)
                 
+                if(res[1][item]!=0){
+                    if(ctn[item] !=null){
+                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`); 
+                    }
+                
+                    if(item =='death'){
+                        this.createFloatingText( ctn.manPower.x+40, ctn.manPower.y+30, '', 
+                        `-${res[1][item]}`);
+                    }
+                }
             })
             
         }
@@ -821,7 +909,12 @@ export default class UIScene extends Phaser.Scene {
             }
         });
     }
-    
+    turnEnd(){
+        this.registry.events.emit(GameEvents.TURN_END, true);
+        this.forceUpdateTileInfo();
+        this.renderSubTileInfo(null,false);
+        this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
+    }
     makeButton(x,y, width,height, text, options={}){
         const container = this.add.container(x,y).setInteractive({ 
             hitArea: new Phaser.Geom.Rectangle(-width/2, -height/2,width, height), 

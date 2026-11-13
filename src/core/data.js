@@ -12,13 +12,6 @@ export const GameData = {
     },
 
     saveData: {
-        house:0,
-        manPower:10,
-        ammo:100,
-        food:120,
-        fuel:20,
-        misc:500,
-        mapDatas:[]
     },
     save() {
         localStorage.setItem('projectRTS_game_data', JSON.stringify(this.saveData));
@@ -26,6 +19,8 @@ export const GameData = {
     },
 
     load() {
+        console.log(this.saveData)
+        return;
         const data = localStorage.getItem('projectRTS_game_data');
         if (data) {
             this.saveData = JSON.parse(data);
@@ -33,6 +28,28 @@ export const GameData = {
         }else{
             console.log('저장된 게임 데이터가 없습니다. 기본값 사용');
         }
+    },
+    reset(){
+        const resetData = {
+            house:0,
+            pop:[], //0 아기 1 남자 2여자 (?)
+            manPower:5,
+            ammo:100,
+            food:12,
+            fuel:20,
+            misc:100,
+            mapDatas:[]
+        }
+        const names = ['Kim' ,'John', 'Johan', 'Betty', 'Rose', 'Henderson', 'Park', 'Lee', 'Abdule', 'Franc'];
+        for(let i = 0 ; i < 7 ; i++){
+            resetData.pop.push( { tag: names[Phaser.Math.Between(0,names.length-1)] ,
+                 type:Phaser.Math.Between(1,2), 
+                 hunger: Phaser.Math.Between(1,3), 
+                 age:Phaser.Math.Between(18,36)
+            });
+        }
+        
+        this.saveData = {... resetData }
     }
 };
 /**

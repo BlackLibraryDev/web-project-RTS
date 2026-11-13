@@ -53,6 +53,7 @@ export const LanguageData = {
     },
 
     getText(key) {
-        return this.dictionary[this.currentLang]?.[key] || key;
+        const txt = (this.dictionary[this.currentLang]?.[key]) || key;
+        return txt.replaceAll('//','\n') || key;
     }
 };
