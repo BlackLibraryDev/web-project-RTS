@@ -23,6 +23,7 @@ export default class UIScene extends Phaser.Scene {
         this.make_resourceBar();
         this.make_tileInfo();
         this.make_subTileInfo();
+        this.make_tileDecisionInfo();
         this.registry.events.emit(GameEvents.TURN_END, false);
 
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
@@ -47,8 +48,53 @@ export default class UIScene extends Phaser.Scene {
             this.registry.events.off(GameEvents.GAME_PAUSE);
             this.subTileInfoContainer = null;
             this.tileInfoContainer = null;
+            this.decisionContainer = null
         });
+        //color data.team >1 ? 0xff4f4f :  0x2cb9ff 
+    }
+
+
+    make_tileDecisionInfo(){
+        this.decisionContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
+        const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            align: 'center',
+            padding:{ x: 2, y: 2 }
+        } 
+        const width = 400;
+        const height = 300;
+        const startX = -width/2;
+        const startY = -100;
+        const menuBg = this.add.rectangle(-width/2,-height/2 +50, width , height ,0x000000,0.7).setStrokeStyle(2,0xffffff)
+        .setInteractive().setOrigin(0); // 뒤쪽 인게임 클릭 차단;
+        // 어두운 반투명 배경 레이어 (화면 전체 덮기)
+        const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0)
+        .setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => {
+            this.decisionContainer.setVisible(false);
+            
+        }); 
+
+        const titleTxt = this.add.text(0,startY+10, 'title' ,fontStyle).setOrigin(0.5,0);
         
+        const Btconfirm = this.makeButton(0, startY+height-30, 200, 40, 'confirm', {color:0x2cb9ff});
+        const Bt_A = this.makeButton(-90, startY+height-30, 160, 40, 'confirm', {color:0x2cb9ff});
+        const Bt_B = this.makeButton(+90, startY+height-30, 160, 40, 'cancel');
+
+        this.decisionContainer.items={
+            titleText:titleTxt,
+            startX:startX,
+            startY:startY,
+            btConfirm:Btconfirm,
+            btA:Bt_A,
+            btB:Bt_B
+        }
+
+
+        this.decisionContainer.add( [overlay,  menuBg , titleTxt,  Bt_A, Bt_B, Btconfirm]);
+        //this.decisionContainer.setVisible(false);
     }
     make_subTileInfo(){
         //서브 타일 항목
@@ -67,7 +113,13 @@ export default class UIScene extends Phaser.Scene {
         menuBg.on('pointerdown', () => {
             //this.subTileInfoContainer.setVisible(false);
         });
-
+        // 어두운 반투명 배경 레이어 (화면 전체 덮기)
+        const overlay = this.add.rectangle(320, 0, this.scale.width, this.scale.height, 0x000000, 0.1)
+        .setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => {
+            this.subTileInfoContainer.setVisible(false);
+            
+        }); 
         const titleTxt = this.add.text(startX+10,startY+10, 'title' ,fontStyle).setOrigin(0);
         
         const resourceTxt = this.add.text(startX+10,startY+50, 'Resource: ' ,fontStyle).setOrigin(0).setFontSize(16);
@@ -84,7 +136,7 @@ export default class UIScene extends Phaser.Scene {
             padding:{ x: 2, y: 2 }
         } ).setOrigin(0.5);
 
-        this.subTileInfoContainer.add( [ menuBg, titleTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
+        this.subTileInfoContainer.add( [ overlay, menuBg, titleTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
         this.subTileInfoContainer.items={
             titleText:titleTxt,
             resourceText:resourceTxt,
@@ -130,7 +182,7 @@ export default class UIScene extends Phaser.Scene {
                         
                         Object.keys(spent).forEach((item) => {
                             //건설비 절반 반환
-                            spent[item] =Math.abs(spent[item])/2
+                            spent[item] =Math.abs(spent[item])/2;
                             GameData.saveData[item] += spent[item];
                         })
 
@@ -221,24 +273,24 @@ export default class UIScene extends Phaser.Scene {
                 items.list = [];
             }
             if(data.add!=null){
-                //무언가 추가하는 경우
+                //건설항목 등 무언가 추가하는 경우
                 items.list = [];
                 const addList = [createFacilityData('baseCamp'), createFacilityData('mouseFarm')];
                 for(let n = 0 ; n<addList.length; n++){
                     const ct = this.make_tileInfoContainer(1, addList[n], items.startX+15, items.startY +60 + n*60);
+                    ct.nameText.setText(  `+add ${LanguageData.getText( ct.itemData.tag )} `);
+                    const spent = ct.itemData.spentResource;
+                    let txt = ''
+                    Object.keys(spent).forEach((item) => {
+                        txt += `${item}: ${Math.abs(spent[item]) }`
+                        spent[item] = -Math.abs(spent[item])
+                        
+                    });
+                    ct.infoText.setText( txt );
                     ct.off('pointerDown');
                     ct.on('pointerdown', () => {
                         //클릭 시 건물 추가
-                        const spent = ct.itemData.spentResource;
-                        Object.keys(spent).forEach((item) => {
-                           // console.log(item, spent[item])
-                           if(GameData.saveData[item] < Math.abs(spent[item]) ){
-                                console.warn('자원이 부족합니다');
-                                return;
-                           }else{
-                                spent[item] = -Math.abs(spent[item])
-                           }
-                        });
+                        const spent =ct.itemData.spentResource;
                         Object.keys(spent).forEach((item) => {
                             GameData.saveData[item] += spent[item] ;
                         })
@@ -389,6 +441,8 @@ export default class UIScene extends Phaser.Scene {
         container.add([bg,nameTxt,infoTxt,icon, bar]);
         container.bar = bar;
         container.itemData = data;
+        container.nameText = nameTxt;
+        container.infoText = infoTxt;
         return container;
     }
 
