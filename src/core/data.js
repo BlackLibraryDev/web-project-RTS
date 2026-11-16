@@ -19,7 +19,7 @@ export const GameData = {
     },
 
     load() {
-        console.log(this.saveData)
+        //console.log(this.saveData)
         return;
         const data = localStorage.getItem('projectRTS_game_data');
         if (data) {
@@ -33,25 +33,34 @@ export const GameData = {
         const resetData = {
             house:0,
             pop:[], //0 아기 1 남자 2여자 (?)
-            manPower:5,
+            manPower:0,
             ammo:100,
-            food:12,
+            food:120,
             fuel:20,
             misc:100,
-            mapDatas:[]
-        }
-        const names = ['Kim' ,'John', 'Johan', 'Betty', 'Rose', 'Henderson', 'Park', 'Lee', 'Abdule', 'Franc'];
-        for(let i = 0 ; i < 7 ; i++){
-            resetData.pop.push( { tag: names[Phaser.Math.Between(0,names.length-1)] ,
-                 type:Phaser.Math.Between(1,2), 
-                 hunger: Phaser.Math.Between(1,3), 
-                 age:Phaser.Math.Between(18,36)
-            });
+            mapDatas:[],
+            ammos:[],
+            foods:[],
+            miscs:[]
         }
         
+       // returnMenpower( 7 , resetData.pop);
+        //resetData.manPower = resetData.pop.length;
         this.saveData = {... resetData }
     }
 };
+export function addMenpower(num=1, array = null){
+    const names = ['Kim' ,'John', 'Johan', 'Betty', 'Rose', 'Henderson', 'Park', 'Lee', 'Abdule', 'Franc'];
+    const a = array ?? [];
+    for(let i = 0 ;i < num; i++){
+        a.push( { tag: names[Phaser.Math.Between(0,names.length-1)] ,
+                 type:Phaser.Math.Between(1,2), 
+                 hunger: Phaser.Math.Between(2,4), 
+                 age:Phaser.Math.Between(18,36)
+            } );
+    }
+    return a;
+}
 /**
  * 범용 TSV 텍스트 파서 함수
  * @param {string} tsvText - load.text로 불러온 TSV 원본 문자열
@@ -124,25 +133,55 @@ export function createFacilityData(facilityKey) {
     if(data.type =='house'){
         //집 공간 랜덤값
         if(data.maxAmount !=null){
-            data.amount = Phaser.Math.Between( 0, data.maxAmount);
+            if(data.amount< data.maxAmount){
+                data.maxAmount = Phaser.Math.Between( data.amount, data.maxAmount);
+            }
+            
+            if(data.maxAmount>0){
+                data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
+            }else{
+                data.pop = []
+            }
+            data.amount = data.pop.length;
+
+            
+            //console.log(data.pop);
         }
     }
     if(data.type=='mine'){
         //광산 자원 랜덤값
         data.amount = Phaser.Math.Between( 0, data.maxAmount);
     }
-    if(data.spentResource!=null){
-        const spentResource = data.spentResource.split(';');
+    if(data.type=='farm'){
+
+        data.turnEnd = ()=>{
+            console.log(`farm ${data.tag} : ` );
+            return data;
+        }
+    }
+    if(data.type=='facility'){
+
+        data.turnEnd = ()=>{
+             console.log(`facility ${data.tag} : ` );
+             return data;
+        }
+    }
+    if(data.cost!=null){
+        const cost = data.cost.split(';');
         let spent ={};
-        for(let i =0 ; i< spentResource.length ; i++){
-            if(spentResource[i].length>0){
-                const value = spentResource[i].split(':');
+        for(let i =0 ; i< cost.length ; i++){
+            if(cost[i].length>0){
+                const value = cost[i].split(':');
                 spent[value[0]] = Number(value[1])
             }
             
         }
-        data.spentResource = spent;
+        data.cost = spent;
     }
+    if(data.maxLaborTime!= null){
+        data.laborTime = 0;
+    }
+    //전용 함수선언
     
 
     // 전개 연산자(...)를 사용해 원본과 참조가 끊긴 새로운 객체(복사본) 반환

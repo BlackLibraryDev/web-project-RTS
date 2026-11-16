@@ -2,6 +2,7 @@
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
 import { GameData, createFacilityData } from './core/data.js';
+import { calculateResourceData, objectCopy } from './core/calculateTurn.js';
 
 export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
 
@@ -12,6 +13,7 @@ export default class UIScene extends Phaser.Scene {
     
     create() {
         const gameScene = this.scene.get('GameScene');
+        const metaMap = this.scene.get('metaMap');
 
         this.turn = {year:2054 , week:1 };
 
@@ -24,7 +26,14 @@ export default class UIScene extends Phaser.Scene {
         this.make_tileInfo();
         this.make_subTileInfo();
         this.make_tileDecisionInfo(LanguageData.getText('txt_welcome'), LanguageData.getText( 'txt_welcomeInfo'));
-        this.registry.events.emit(GameEvents.TURN_END, false);
+
+        //ConfirmModal( this, 0,0, LanguageData.getText( 'txt_welcomeInfo'))
+        
+        //this.registry.events.emit(GameEvents.TURN_END, false);
+
+        //턴 계산
+        const res= calculateResourceData(metaMap);
+        this.renderResourceBar( res );
 
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
         this.endTurnButton.on('pointerdown', () => {
@@ -131,7 +140,62 @@ export default class UIScene extends Phaser.Scene {
         this.decisionContainer.add( [overlay,  menuBg , titleTxt, subTxt,  Bt_A, Bt_B, Btconfirm]);
         return this.decisionContainer;
     }
-    
+    //미사용... 
+    makeSubTileInfo(titleText, resourceText, _btUp = null, _btDown= null, _btDel= null){
+        const container = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
+        const fontStyle ={
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        } 
+
+        const startX = 340-this.scale.width/2;
+        const startY = 150-this.scale.height/2;
+        const menuBg = this.add.rectangle(startX,startY,300,400,0x000000,0.7).setStrokeStyle(2,0xffffff)
+        .setInteractive().setOrigin(0); // 뒤쪽 인게임 클릭 차단;
+        menuBg.on('pointerdown', () => {
+            //container.destroy();
+        });
+        // 어두운 반투명 배경 레이어 (화면 전체 덮기)
+        const overlay = this.add.rectangle(320, 0, this.scale.width, this.scale.height, 0x000000, 0.1)
+        .setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => {
+            container.destroy();
+            
+        }); 
+        const titleTxt = this.add.text(startX+10,startY+10, titleText ,fontStyle).setOrigin(0);
+        
+        const resourceTxt = this.add.text(startX+10,startY+50, resourceText ,fontStyle).setOrigin(0).setFontSize(16);
+        const bar = this.add.graphics();
+        
+        const btDel = this.makeButton(startX+150, startY+360, 240,50, LanguageData.getText('demolition'));
+        const btUp = this.makeButton(startX+270,startY +110, 40,40, '+');
+        const btDown = this.makeButton(startX +30,startY +110, 40,40, '-');
+        const laborTxt = this.add.text(startX+150, startY +110 , `${LanguageData.getText('labor')}: 0`, {
+            fontFamily:'Arial',
+            fontSize: '24px',
+            fill: '#ffffff',
+            align:'center',
+            padding:{ x: 2, y: 2 }
+        } ).setOrigin(0.5);
+
+        if(_btDel==null) btDel.setVisible(false);
+        if(_btUp==null) btUp.setVisible(false);
+        if(_btDel==null) btDown.setVisible(false);
+        btDel.on('pointerdown', ()=>{
+            if(_btDel!=null) _btDel();
+        })
+        btUp.on('pointerdown', ()=>{
+            if(_btUp!=null) _btUp();
+        })
+        btDown.on('pointerdown', ()=>{
+            if(_btUp!=null) _btDown();
+        })
+        container.add( [ overlay, menuBg, titleTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
+        return container;
+    }
+
     make_subTileInfo(){
         //서브 타일 항목
         this.subTileInfoContainer  = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
@@ -139,7 +203,11 @@ export default class UIScene extends Phaser.Scene {
             fontFamily:'Arial',
             fontSize: '24px',
             fill: '#ffffff',
-            padding:{ x: 2, y: 2 }
+            padding:{ x: 2, y: 2 },
+            wordWrap: {
+                width: 280, // 줄바꿈이 일어날 최대 가로 너비 (픽셀)
+                useAdvancedWrap: true // 한글/영문 단어 단위 줄바꿈 세부 설정 (선택 사항)
+            }
         } 
 
         const startX = 340-this.scale.width/2;
@@ -157,6 +225,8 @@ export default class UIScene extends Phaser.Scene {
             
         }); 
         const titleTxt = this.add.text(startX+10,startY+10, 'title' ,fontStyle).setOrigin(0);
+
+        const infoTxt = this.add.text(startX+10, startY+ 160, 'info', fontStyle).setOrigin(0).setFontSize(20);
         
         const resourceTxt = this.add.text(startX+10,startY+50, 'Resource: ' ,fontStyle).setOrigin(0).setFontSize(16);
         const bar = this.add.graphics();
@@ -172,9 +242,10 @@ export default class UIScene extends Phaser.Scene {
             padding:{ x: 2, y: 2 }
         } ).setOrigin(0.5);
 
-        this.subTileInfoContainer.add( [ overlay, menuBg, titleTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
+        this.subTileInfoContainer.add( [ overlay, menuBg, titleTxt, infoTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
         this.subTileInfoContainer.items={
             titleText:titleTxt,
+            infoText:infoTxt,
             resourceText:resourceTxt,
             bar:bar,
             startX:startX,
@@ -195,10 +266,10 @@ export default class UIScene extends Phaser.Scene {
             items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
             
             let spentTxt = '';
-            if(data.spentResource!=null){
+            if(data.cost!=null){
                 for(let i = 0; i < this.tileData.facility.length ; i++){
                     if(this.tileData.facility[i] == data){
-                        const spent = data.spentResource;
+                        const spent = data.cost;
                         Object.keys(spent).forEach((item) => {
                             spentTxt += `${item} +${Math.abs(spent[item])/2}`;
                         });
@@ -206,6 +277,28 @@ export default class UIScene extends Phaser.Scene {
                     }
                 }
             }
+            items.Demol= ()=>{
+                for(let i = 0; i < this.tileData.facility.length ; i++){
+                    if(this.tileData.facility[i] == data){
+                        //건설 해체
+                        if(data.labor!=null)  GameData.saveData.manPower+= data.labor;
+                        const spent = data.cost;
+                        
+                        Object.keys(spent).forEach((item) => {
+                            //건설비 절반 반환
+                            spent[item] =Math.abs(spent[item])/2;
+                            GameData.saveData[item] += spent[item];
+                        })
+                        this.tileData.facility.splice(i,1);
+                        this.renderSubTileInfo(null,false);
+                        this.forceUpdateTileInfo();
+                        this.renderResourceBar([null, spent ]);
+                        
+                        break;
+                    }
+                }
+            }
+
             
             items.btDel.nameTxt.setText( LanguageData.getText('demolition')+`${spentTxt.length>0?' ('+spentTxt+')'  :''}`)
             items.btDel.off('pointerdown');
@@ -214,21 +307,8 @@ export default class UIScene extends Phaser.Scene {
                     if(this.tileData.facility[i] == data){
                          const confirm2 = ()=>{ };
                         const confirm1 = ()=>{
-                            //건설 해체
-                            if(data.labor!=null)  GameData.saveData.manPower+= data.labor;
-                            const spent = data.spentResource;
-                            
-                            Object.keys(spent).forEach((item) => {
-                                //건설비 절반 반환
-                                spent[item] =Math.abs(spent[item])/2;
-                                GameData.saveData[item] += spent[item];
-                            })
-
-
-                            this.tileData.facility.splice(i,1);
-                            this.renderSubTileInfo(null,false);
-                            this.forceUpdateTileInfo();
-                            this.renderResourceBar([null, spent ]);
+                            //선택지1
+                            items.Demol();
                         }
                         this.make_tileDecisionInfo(LanguageData.getText('txt_demol'),LanguageData.getText('txt_demolinfo'),
                          confirm1, confirm2);
@@ -238,7 +318,13 @@ export default class UIScene extends Phaser.Scene {
                     }
                 }
             });
+            const Calculate = ()=>{
+                const delta = 10;
+                //res[team][fs.resource] += delta *fs.labor;
+                items.infoText.setText(`Estimate income: \n ${data.resource}: +${delta*data.labor}`);
+                items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
 
+            }
             items.btUp.off('pointerdown');
             items.btUp.on('pointerdown', () => {
                 const player = GameData.saveData;
@@ -246,9 +332,9 @@ export default class UIScene extends Phaser.Scene {
                     if(player.manPower>0 && data.labor < data.maxLabor){
                         player.manPower--;
                         data.labor++
-                        items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
+                         Calculate();
                     }
                 }
             });
@@ -259,9 +345,10 @@ export default class UIScene extends Phaser.Scene {
                     if(data.labor>0){
                         player.manPower++;
                         data.labor--
-                        items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
+                        
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
+                        Calculate();
                     }
                 }
             });
@@ -272,8 +359,23 @@ export default class UIScene extends Phaser.Scene {
             items.laborText.setVisible(false);
             items.bar.clear();
             items.resourceText.setVisible(false);
+
+
+            if(data.type =='house'){
+                items.btDown.setVisible(false);
+                items.btUp.setVisible(false);
+                items.laborText.setVisible(false)
+                items.resourceText.setVisible(true);
+                items.resourceText.setText( `house upkeep: +${data.amount}`);
+            }
+            if(data.type =='farm'){
+                
+            }
+
+
             //amout 가 있는 경우 바 표시 및 노동력 버튼 추가
             if(data.labor !=null ){
+                 Calculate();
                 items.resourceText.setVisible(true);
                 items.btDown.setVisible(true);
                 items.btUp.setVisible(true);
@@ -290,7 +392,7 @@ export default class UIScene extends Phaser.Scene {
                         items.bar.fillStyle(0x00ff00, 1); 
                         items.bar.fillRect(-290, items.startY+70, 280 * percentage, 10);
                     }
-                    this.subTileInfoContainer.add(items.bar)
+                    this.subTileInfoContainer.add(items.bar);
                     items.resourceText.setText( `resource: ${data.amount}/${data.maxAmount}(${ Math.ceil(percentage*1000)/10 }%)`)
                     items.bar.setVisible(true);
                 }else{
@@ -301,13 +403,8 @@ export default class UIScene extends Phaser.Scene {
                 
             }
 
-            if(data.type =='house'){
-                items.btDown.setVisible(false);
-                items.btUp.setVisible(false);
-                items.laborText.setVisible(false)
-                items.resourceText.setVisible(true);
-                items.resourceText.setText( `house upkeep: +${data.amount}`);
-            }
+            
+
             if(items.list!=null){
                 for( let i =0 ;i <items.list.length ; i++){
                     items.list[i].destroy();
@@ -317,25 +414,40 @@ export default class UIScene extends Phaser.Scene {
             if(data.add!=null){
                 //건설항목 등 무언가 추가하는 경우
                 items.list = [];
-                const addList = [createFacilityData('baseCamp'), createFacilityData('mouseFarm')];
+                const addList = [];
+                switch(this.tileData.tag){
+                    case 'water':
+                        addList.push( createFacilityData('fishBay'), createFacilityData('waterPump'))
+                        break;
+
+                    default:
+                        addList.push(createFacilityData('baseCamp') , createFacilityData('mouseFarm'), createFacilityData('yard'), createFacilityData('radCleaner'));
+                    break
+                }
+
                 for(let n = 0 ; n<addList.length; n++){
                     const ct = this.make_tileInfoContainer(1, addList[n], items.startX+15, items.startY +60 + n*60);
                     ct.nameText.setText(  `+add ${LanguageData.getText( ct.itemData.tag )} `);
-                    const spent = ct.itemData.spentResource;
+                    const spent = ct.itemData.cost;
                     let txt = ''
-                    Object.keys(spent).forEach((item) => {
-                        txt += `${item}: ${Math.abs(spent[item]) }`
-                        spent[item] = -Math.abs(spent[item])
-                        
-                    });
+                    if(spent!=null){
+                         Object.keys(spent).forEach((item) => {
+                            txt += `${item}: ${Math.abs(spent[item]) }`
+                            spent[item] = -Math.abs(spent[item])
+                            
+                        });
+                    }
+                   
                     ct.infoText.setText( txt );
                     ct.off('pointerDown');
                     ct.on('pointerdown', () => {
                         //클릭 시 건물 추가
-                        const spent =ct.itemData.spentResource;
-                        Object.keys(spent).forEach((item) => {
-                            GameData.saveData[item] += spent[item] ;
-                        })
+                        const spent =ct.itemData.cost;
+                        if(spent!=null){
+                            Object.keys(spent).forEach((item) => {
+                                GameData.saveData[item] += spent[item] ;
+                            })
+                        }
                         this.tileData.facility.push( ct.itemData );
                         
                         //this.registry.events.emit(GameEvents.TURN_END, false);
@@ -401,11 +513,18 @@ export default class UIScene extends Phaser.Scene {
         
 
         const titleTxt = this.add.text(startX+55,sY-12, 'title' ,fontStyle).setOrigin(0);
+        const bar = this.add.graphics();
+        const radTxt = this.add.text(startX+20, startY+60, 'Rad: ' , fontStyle).setOrigin(0).setFontSize(18);
 
-        const facilityContainer = this.add.container(startX, startY+60);
+        const facilityContainer = this.add.container(startX, startY+90);
         const facilityBg = this.add.rectangle(10, 0, 280,380, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         const facilityTxt = this.add.text(20, 10, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
-        facilityContainer.add([facilityBg,facilityTxt]);
+
+        const facilitySlot = this.add.text(280,10, 'slot 1/5', fontStyle).setOrigin(1,0).setAlign('right');
+
+        
+
+        facilityContainer.add([facilityBg,facilityTxt,facilitySlot]);
 
         const garrisonContainer = this.add.container(startX,startY+450);
         const garrisonBg = this.add.rectangle(10,0,280,200, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
@@ -416,17 +535,20 @@ export default class UIScene extends Phaser.Scene {
          const garrisonList = [];
         this.tileInfoContainer.items ={
             titleText :titleTxt,
+            bar:bar,
+            radText:radTxt,
             facilityList: facilityList,
             garrisonList: garrisonList,
             facilityContainer: facilityContainer,
             garrisonContainer: garrisonContainer,
+            slotText:facilitySlot,
             startX: startX,
             startY: startY,
             tileImage : tileImage,
             facilityText:facilityTxt,
             garrisonText:garrisonTxt
         }
-        this.tileInfoContainer.add([menuBg,facilityContainer, garrisonContainer,  tileImage,bgGraphics, returnButton,titleTxt ]);
+        this.tileInfoContainer.add([menuBg,facilityContainer, garrisonContainer,  tileImage,bgGraphics, returnButton,titleTxt, radTxt ]);
 
         this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
@@ -451,18 +573,26 @@ export default class UIScene extends Phaser.Scene {
             fill: '#ffffff',
             padding:{ x: 2, y: 2 }
         }
+        const fontStyleR ={
+            fontFamily:'Arial',
+            fontSize: '20px',
+            fill: '#ffffff',
+            padding:{ x: 2, y: 2 }
+        }
         
         const bgcolor = data.team? ( data.team >1 ? 0xff4f4f :  0x2cb9ff  ) : ( 0x000000 ); 
         const bg = this.add.rectangle(0,0, width,height, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         
         let num = ''
         if(data.labor!=null ) num = '('+data.labor+')';
-        if(data.type == 'house') num = '(+'+ data.amount +')';
+        if(data.type == 'house') num = `(${data.amount}/${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(20);
 
         let text = `${data.type} ${data.resource? ': '+data.resource :''}`
         const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
+
+        const slotTxt = this.add.text(width-5, 5, data.slot!=null? `slot: ${data.slot}`:'', fontStyle).setOrigin(1,0).setAlign('right').setFontSize(20);
 
         const icon = this.add.image(4,12,'icon').setOrigin(0);
 
@@ -480,11 +610,12 @@ export default class UIScene extends Phaser.Scene {
 
 
 
-        container.add([bg,nameTxt,infoTxt,icon, bar]);
+        container.add([bg,nameTxt,infoTxt,slotTxt, icon, bar]);
         container.bar = bar;
         container.itemData = data;
         container.nameText = nameTxt;
         container.infoText = infoTxt;
+        container.slotText = slotTxt;
         return container;
     }
 
@@ -510,6 +641,27 @@ export default class UIScene extends Phaser.Scene {
     renderTileInfoList(tileData ){
         this.clearTileInfoList();
         const items = this.tileInfoContainer.items;
+
+        if(tileData.rad>0){
+            items.bar.clear();
+            const maxRad = 10;
+            const sx = items.startX+10;
+            const sy =  items.startY+80;
+            const percentage = tileData.rad / maxRad;        
+            items.bar = this.add.graphics();
+            items.bar.fillStyle(0x333333, 1); // 어두운 회색 배경
+            items.bar.fillRect(sx, sy, 280, 10);
+
+            // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)
+            if (percentage > 0) {
+                items.bar.fillStyle(0x00ff00, 1); 
+                items.bar.fillRect(sx,sy, 280 * percentage, 10);
+            }
+            this.tileInfoContainer.add(items.bar);
+            items.radText.setText( `Rad: ${tileData.rad}/${maxRad}(${ Math.ceil(percentage*1000)/10 }%)`)
+            items.bar.setVisible(true);
+        
+        }
 
        if(tileData.facility.length>=0){
             items.facilityContainer.setVisible(true);
@@ -685,9 +837,11 @@ export default class UIScene extends Phaser.Scene {
                 `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
             
-            let num = tileData.facility.length;
+            let num = 0;
+            for(let i = 0; i <tileData.facility.length; i++){ if(tileData.facility[i].slot!=null) num+= tileData.facility[i].slot }
             let maxNum = tileData.slot;
-            items.facilityText.setText( `${LanguageData.getText('facility')} - slot: ${num}/${maxNum}`  );
+            items.facilityText.setText( `${LanguageData.getText('facility')}`  );
+            items.slotText.setText(`slot: ${num}/${maxNum}`)
         }else{
             //미탐험지역
             items.titleText.setText(`미탐험지역`)
@@ -699,17 +853,16 @@ export default class UIScene extends Phaser.Scene {
     renderResourceBar( res =null, turnEnd =false ){
         const ctn = this.resourceContainer;
         const manpower = {baby:0, child:0, adult:0, house:0 }
-        ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
+        //ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
 
         const data = GameData.saveData;
-        const metaMap = this.scene.get('metaMap');
-        metaMap.calculateResource(false);
+        //metaMap.calculateResource(false);
         //인벤토리 구현 및 아이템 sum 후 수치표현
-        ctn.manPowerText.setText(`⛏${data.manPower}/👤${data.pop.length}/🏠${data.house}`);
-        ctn.ammoText.setText(`${data.ammo}/1000`);
-        ctn.foodText.setText(`${data.food}/1000`);
-        ctn.miscText.setText(`${data.misc}/1000`);
-        ctn.fuelText.setText(`${data.fuel}/1000`);
+        ctn.manPowerText.setText(`${data.manPower}/${data.pop.length} 🏠${data.house}`);
+        ctn.ammoText.setText(`${data.ammo}`);
+        ctn.foodText.setText(`${data.food}`);
+        ctn.miscText.setText(`${data.misc}`);
+        ctn.fuelText.setText(`${data.fuel}`);
 
         if(res !=null){
             if(turnEnd){
@@ -718,23 +871,42 @@ export default class UIScene extends Phaser.Scene {
                     this.turn.week =1;
                     this.turn.year++
                 }
+                //console.log(data)
+                Object.keys(res[1]).forEach((item) => {
+                //console.log(`${item}:${res[1][item]}`)
+                    
+                    if(res[1][item]!=0 && res[1][item].length ==null){
+                        //배열이 아닌 경우
+                        if(ctn[item] !=null){
+                           // data[item] += res[1][item];
+                            this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`); 
+                        }
+                    
+                        if(item =='death'){
+                            this.createFloatingText( ctn.manPower.x+40, ctn.manPower.y+30, '', 
+                            `-${res[1][item]}`);
+                        }
+                    }
+                    if(res[1].foods.length>0){
+                        for(let n =0 ;n < res[1].foods.length; n++){
+                            const item = res[1].foods[n];
+                            //data.food += item.num;
+                             this.createFloatingText( ctn.food.x, ctn.food.y+60+ n*30,
+                                 ``,
+                                 `${item.tag} ${(item.num>0 ? '+': '' )}${item.num}`); 
+                        }
+                    }
+                    if(res[1].miscs.length>0){
+                        for(let n =0 ;n < res[1].miscs.length; n++){
+                            const item = res[1].miscs[n];
+                           // data.misc += item.num;
+                             this.createFloatingText( ctn.misc.x+30, ctn.misc.y+60 + n*30,
+                                 ``,
+                                 `${item.tag} ${(item.num>0 ? '+': '' )}${item.num}`); 
+                        }
+                    }
+                })
             }
-            
-            
-            Object.keys(res[1]).forEach((item) => {
-              // console.log(`${item}:${res[1][item]}`)
-                
-                if(res[1][item]!=0){
-                    if(ctn[item] !=null){
-                        this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`); 
-                    }
-                
-                    if(item =='death'){
-                        this.createFloatingText( ctn.manPower.x+40, ctn.manPower.y+30, '', 
-                        `-${res[1][item]}`);
-                    }
-                }
-            })
             
         }
         ctn.turnText.setText( `Year ${this.turn.year}, week ${this.turn.week}`);
@@ -814,6 +986,7 @@ export default class UIScene extends Phaser.Scene {
          const bg = this.add.rectangle(0,0,width,height, color ,1).setStrokeStyle(2,0xffffff).setOrigin(0.5);
         const iconTxt = this.add.text(-width/2+10,0, icon, iconStyle).setOrigin(0,0.5);
         const nameTxt = this.add.text(width/2-10,0,text, fontStyle).setOrigin(1,0.5);
+
 
         container.add([bg, iconTxt, nameTxt]);
         container.bg = bg;

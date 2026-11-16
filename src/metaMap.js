@@ -10,6 +10,7 @@ import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
 import { GameData, createFacilityData } from './core/data.js';
+import { calculateResourceData } from './core/calculateTurn.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -74,7 +75,7 @@ export default class metaMap extends Phaser.Scene {
                 if(terrainType.name=='field'){
                     if(Math.random()< 0.4)  facilityList.push( createFacilityData('apartment')); 
                     if(Math.random()< 0.3)  facilityList.push( createFacilityData('boardingHouse')); 
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData('junkMine'));
+                    if(Math.random()< 0.4)  facilityList.push( createFacilityData('junkMine'));
                     
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'scout', type:'infantry', amount:1})}
                     if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'anti-drone team', type:'infantry', amount:1})}
@@ -85,12 +86,14 @@ export default class metaMap extends Phaser.Scene {
 
                 this.mapDatas[r][q] = { 
                     id: terrainId , 
-                    type: terrainType, 
+                    type: {... terrainType }, 
+                    tag: terrainType.tag,
                     name:terrainType.name, 
                     team:teamNum,
                     q:q, 
                     r:r,
                     slot:maxNum,
+                    rad:Phaser.Math.Between(2,4),
                     explored: GameOptions.config.debugMode, 
                     facility:facilityList, 
                     garrison:garrisonList
@@ -126,6 +129,8 @@ export default class metaMap extends Phaser.Scene {
 
         // 3. 카메라 드래그 이동 설정
         this.setupCameraControls();
+
+        //this.registry.set('mapDatas', this.mapDatas);
 
         this.player //  = new Unit(this, { tag: 'unit_commandVan', q: this.startingPoint.q, r: this.startingPoint.r });
         
@@ -213,16 +218,11 @@ export default class metaMap extends Phaser.Scene {
         this.registry.events.on(GameEvents.TURN_END, (isTurnEnd=false) =>{
             //데이터 종료 버튼 누를 시 자원 계산
             
-            const res = this.calculateResource(isTurnEnd);
+            const res = calculateResourceData( this, isTurnEnd);
            
             if(isTurnEnd){
                 //턴 종료 시
                 //turn ++ 
-                const player= GameData.saveData
-                Object.keys(res[1]).forEach((item) => {
-                    //console.log(`${item}:${res[1][item]}`)
-                    player[item]+= res[1][item];
-                })
                 console.warn('turnEnd', res[1]);
             }
             uiScene.renderResourceBar( res, isTurnEnd );
@@ -265,13 +265,17 @@ export default class metaMap extends Phaser.Scene {
             const array = this.hexTileRadious(vilPoint.r, vilPoint.q);
             for(let i = 0; i <array.length ; i++){
                 if(Math.random()<0.7){
+                    
                     array[i].type  = TERRAIN_TYPES.VIL.id;
                     array[i].type = TERRAIN_TYPES.VIL;
                     array[i].name = TERRAIN_TYPES.VIL.name
+                    array[i].rad = Phaser.Math.Between(2,6);
                     let facilityList =[]
                     if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
                     if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
                     if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));
+                    if(Math.random()< 0.5)  facilityList.push( createFacilityData('carScrap'));
+                    
                     if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
                     array[i].facility = facilityList;
                 }
@@ -287,7 +291,9 @@ export default class metaMap extends Phaser.Scene {
     /**
      * 자원 총합 계산 및 
      */
-    calculateResource(isEndTurn=false){
+    calculateResource(isTurnEnd=false){
+
+        return ;
         //자원 총합 계산
         const data = GameData.saveData;
         const res0 = {
@@ -299,6 +305,8 @@ export default class metaMap extends Phaser.Scene {
             misc:0,
             food:0,
             fuel:0,
+            miscs:[],
+            foods:[],
         }
         const res = [this.objectCopy(res0) , this.objectCopy(res0), this.objectCopy(res0) ] ;
         for(let r = 0; r < this.mapDatas.length; r++) {
@@ -313,25 +321,55 @@ export default class metaMap extends Phaser.Scene {
                     const fs = facility[i];
                     if(fs.amount!=null ){
                         if(fs.amount>0){
-                            const delta = fs.amount>10 ? 10 : fs.amount ;
+                            
                             switch(fs.type){
                                 case 'house':
                                     
                                     res[team].house += fs.amount;
                                     break;
                             }
-                            if(isEndTurn){
+                            if(isTurnEnd){
                                 //턴 넘길 때만 계산하기
+                                if(fs.turnEnd!=null) {
+                                    const r = fs.turnEnd();
+                                }
                                 if(fs.labor>0){
-                                    res[team][fs.resource] += delta *fs.labor;
-                                    fs.amount -= delta *fs.labor;
-                                    if(fs.amount <0){
-                                        res[team][fs.resource] += fs.amount;
+                                    const delta = fs.amount*fs.labor>10 ? 10 : fs.amount *fs.labor;
+                                    //res[team][fs.resource] += delta;
+                                    fs.amount -= delta;
+
+                                    const pushItems= (array, item)=>{
+
+                                        for(let n =0 ; n < array.length ; n++ ){
+                                            if(array[n].tag == item.tag){
+                                                array[n].num += item.num;
+                                                return;
+                                            }
+                                        }
+                                        array.push( item );
+                                        return;
+                                    }
+                                    if(fs.type=='mine'){
+                                        if(fs.resource=='misc'){
+                                            pushItems( res[team].miscs,{tag:'misc', num:delta });
+                                        }
+                                        if(fs.resource=='scrapIron'){
+                                            for(let c =0 ; c<delta ; c++){
+                                                if(Math.random()<0.7){
+                                                    pushItems( res[team].miscs,{tag:'scrapIron', num:1 });
+                                                }else{
+                                                    pushItems( res[team].miscs,{tag:'misc', num:1 });
+                                                }
+                                            }
+                                            
+                                        }
                                     }
                                     
                                     if(fs.type=='farm'){
-                                        //농사의 경우 재충전
-                                        if(fs.amount<=0) fs.amount = fs.maxAmount;
+                                        //농사의 경우 
+                                        
+                                        pushItems( res[1].foods,{tag:fs.resource, num:Phaser.Math.Between( 1,10) });
+                                        
                                     }
                                 }
                             }
@@ -348,15 +386,17 @@ export default class metaMap extends Phaser.Scene {
                 
             }
         }
-        if(isEndTurn){
+        if(isTurnEnd){
             //식량 소모
             //const data = GameData.saveData;
+            //console.log( res[1].miscs );
+            //console.log( res[1].foods );
             for(let i = 0 ;i <data.pop.length ; i++){
                 const person = data.pop[i];
                 
-                if(data.food >0){
-                    data.food --;
-                    console.log(data.food)
+                if(data.food +res[1].food >0){
+                   // data.food --;
+                    //console.log(data.food)
                     res[1].food--;
                 }else{
                     person.hunger -= 1;
@@ -364,13 +404,13 @@ export default class metaMap extends Phaser.Scene {
                 if(person.hunger<=0){
                     res[1].death++;
                     console.warn(`${person.tag}가 굶주림으로 사망했습니다/탈주했습니다` );
+                    data.manPower--;
                     data.pop.splice(i,1);
                     i--;
 
                 }
             }
-            //우선 값을 복원해줌
-            data.food -= res[1].food;
+            
         }
 
         data.house = res[1].house;
