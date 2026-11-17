@@ -13,7 +13,7 @@ export default class UIScene extends Phaser.Scene {
     
     create() {
         const gameScene = this.scene.get('GameScene');
-        const metaMap = this.scene.get('metaMap');
+        
 
         this.turn = {year:2054 , week:1 };
 
@@ -32,10 +32,11 @@ export default class UIScene extends Phaser.Scene {
         //this.registry.events.emit(GameEvents.TURN_END, false);
 
         //턴 계산
-        const res= calculateResourceData(metaMap);
-        this.renderResourceBar( res );
+        this.calculateData();
 
-        this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn');
+        this.captureButton = this.makeButton( this.scale.width/2, this.scale.height-140,180,60,'captureTheSector',{color:0x2cb9ff}).setDepth(20);
+        this.captureButton.setVisible(false);
+        this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn').setDepth(20);
         this.endTurnButton.on('pointerdown', () => {
             //턴 넘김
              
@@ -172,7 +173,7 @@ export default class UIScene extends Phaser.Scene {
         const btDel = this.makeButton(startX+150, startY+360, 240,50, LanguageData.getText('demolition'));
         const btUp = this.makeButton(startX+270,startY +110, 40,40, '+');
         const btDown = this.makeButton(startX +30,startY +110, 40,40, '-');
-        const laborTxt = this.add.text(startX+150, startY +110 , `${LanguageData.getText('labor')}: 0`, {
+        const laborTxt = this.add.text(startX+150, startY +110 , ``, {
             fontFamily:'Arial',
             fontSize: '24px',
             fill: '#ffffff',
@@ -264,7 +265,9 @@ export default class UIScene extends Phaser.Scene {
             const items = this.subTileInfoContainer.items;
             items.titleText.setText( LanguageData.getText( data.tag ) );
             items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
-            
+            items.infoText.setText(``);
+
+
             let spentTxt = '';
             if(data.cost!=null){
                 for(let i = 0; i < this.tileData.facility.length ; i++){
@@ -290,6 +293,7 @@ export default class UIScene extends Phaser.Scene {
                             GameData.saveData[item] += spent[item];
                         })
                         this.tileData.facility.splice(i,1);
+                        this.calculateData();
                         this.renderSubTileInfo(null,false);
                         this.forceUpdateTileInfo();
                         this.renderResourceBar([null, spent ]);
@@ -319,36 +323,49 @@ export default class UIScene extends Phaser.Scene {
                 }
             });
             const Calculate = ()=>{
-                const delta = 10;
+                this.calculateData();
                 //res[team][fs.resource] += delta *fs.labor;
-                items.infoText.setText(`Estimate income: \n ${data.resource}: +${delta*data.labor}`);
-                items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}`);
+                if(data.status =='building'){
+                    items.infoText.setText(`status: ${data.status}`);
+                }else{
+                    items.infoText.setText(`Estimate income: \n`);
+                    if(data.output!=null){
+                        for(let i =0 ; i<data.output.length;i++){
+                            const item = data.output[i];
+                            items.infoText.text += `${item.tag}: +${item.min}~${item.max} per labor`;
+                        }
+                    }
+                    
+                }
+                
+                items.laborText.setText( `${LanguageData.getText('labor')}: ${data.labor}/${data.maxLabor}`);
 
             }
             items.btUp.off('pointerdown');
             items.btUp.on('pointerdown', () => {
                 const player = GameData.saveData;
-                if(data.labor!=null){
-                    if(player.manPower>0 && data.labor < data.maxLabor){
-                        player.manPower--;
-                        data.labor++
+                if(data.isWorkable){
+                    if(data.maxLabor < data.maxLaborBackup){
+                        //player.manPower--;
+                        data.maxLabor++
+                        Calculate();
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
-                         Calculate();
+                         
                     }
                 }
             });
             items.btDown.off('pointerdown');
             items.btDown.on('pointerdown', () => {
                 const player = GameData.saveData;
-                if(data.labor!=null){
-                    if(data.labor>0){
-                        player.manPower++;
-                        data.labor--
-                        
+                if(data.isWorkable){
+                    if(data.maxLabor>0){
+                        //player.manPower++;
+                        data.maxLabor--
+                        Calculate();
                         this.forceUpdateTileInfo();
                         this.renderResourceBar();
-                        Calculate();
+                        
                     }
                 }
             });
@@ -358,6 +375,7 @@ export default class UIScene extends Phaser.Scene {
             items.btUp.setVisible(false);
             items.laborText.setVisible(false);
             items.bar.clear();
+            items.bar.setVisible(false);
             items.resourceText.setVisible(false);
 
 
@@ -367,6 +385,17 @@ export default class UIScene extends Phaser.Scene {
                 items.laborText.setVisible(false)
                 items.resourceText.setVisible(true);
                 items.resourceText.setText( `house upkeep: +${data.amount}`);
+
+
+                
+                
+                items.infoText.setText(
+                    `${LanguageData.getText('houseMember')}: ${data.pop.length}\n`);
+                for(let n =0 ;n< data.pop.length; n++){
+                    const person = data.pop[n];
+                     items.infoText.text += `* ${person.tag}(${person.age})  | hungry: ${person.hunger} \n`
+                }
+                
             }
             if(data.type =='farm'){
                 
@@ -374,37 +403,32 @@ export default class UIScene extends Phaser.Scene {
 
 
             //amout 가 있는 경우 바 표시 및 노동력 버튼 추가
-            if(data.labor !=null ){
+            if(data.isWorkable ){
                  Calculate();
                 items.resourceText.setVisible(true);
                 items.btDown.setVisible(true);
                 items.btUp.setVisible(true);
                 items.laborText.setVisible(true);
-
-                if(data.amount!=null && data.maxAmount){
-                    const percentage = data.amount!=null ? data.amount / data.maxAmount : 0 ; // 비율 계산 (0 ~ 1)            
-                    items.bar = this.add.graphics();
-                    items.bar.fillStyle(0x333333, 1); // 어두운 회색 배경
-                    items.bar.fillRect(-290, items.startY+70, 280, 10);
-
-                    // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)
-                    if (percentage > 0) {
-                        items.bar.fillStyle(0x00ff00, 1); 
-                        items.bar.fillRect(-290, items.startY+70, 280 * percentage, 10);
-                    }
-                    this.subTileInfoContainer.add(items.bar);
-                    items.resourceText.setText( `resource: ${data.amount}/${data.maxAmount}(${ Math.ceil(percentage*1000)/10 }%)`)
-                    items.bar.setVisible(true);
-                }else{
-                    items.resourceText.setText( `resource: ${data.resource}`);
-                }
-                
-                
-                
             }
 
-            
+            if(data.amount!=null && data.maxAmount ){
+                let tag = data.resource ?? LanguageData.getText('houseMember');
+                if(data.status=='building'){
+                    tag = data.status;
+                }
 
+                items.bar.setVisible(true);
+                const barData = this.renderPercentageBar(items.bar, data, -290, items.startY+70, 280, 10);
+                items.bar = barData.bar;
+                this.subTileInfoContainer.add(items.bar);
+                items.resourceText.setText( `${tag}: ${barData.amount}/${barData.maxAmount}(${ Math.ceil(barData.percentage*1000)/10 }%)`)
+                
+            }else{
+                items.bar.setVisible(false);
+                items.resourceText.setText( `resource: ${data.resource}`);
+            }
+                
+                
             if(items.list!=null){
                 for( let i =0 ;i <items.list.length ; i++){
                     items.list[i].destroy();
@@ -412,16 +436,26 @@ export default class UIScene extends Phaser.Scene {
                 items.list = [];
             }
             if(data.add!=null){
+                items.bar.setVisible(false);
+                items.bar.clear();
                 //건설항목 등 무언가 추가하는 경우
                 items.list = [];
                 const addList = [];
                 switch(this.tileData.tag){
                     case 'water':
-                        addList.push( createFacilityData('fishBay'), createFacilityData('waterPump'))
+                        addList.push( 
+                            createFacilityData('fishBay',{status:'building'}), 
+                            createFacilityData('waterPump',{status:'building'})
+                        );
                         break;
 
                     default:
-                        addList.push(createFacilityData('baseCamp') , createFacilityData('mouseFarm'), createFacilityData('yard'), createFacilityData('radCleaner'));
+                        addList.push(
+                            createFacilityData('baseCamp', {amount:0, pop:[]}),
+                            createFacilityData('mouseFarm',{status:'building'}),
+                            createFacilityData('yard',{status:'building'}), 
+                            createFacilityData('radCleaner',{status:'building'})
+                        );
                     break
                 }
 
@@ -451,6 +485,7 @@ export default class UIScene extends Phaser.Scene {
                         this.tileData.facility.push( ct.itemData );
                         
                         //this.registry.events.emit(GameEvents.TURN_END, false);
+                        this.calculateData();
                         this.forceUpdateTileInfo();
                         this.renderResourceBar([null, spent ]);
                         this.renderSubTileInfo(null,false);
@@ -464,6 +499,24 @@ export default class UIScene extends Phaser.Scene {
             //감추는 경우 랜더링 X 
         }
     }
+
+    renderPercentageBar(bar,data, startX, startY, width, height=10){
+        const amount = data.status=='building'? data.buildTime : data.amount;
+        const maxAmount= data.status=='building'? data.maxBuildTime : data.maxAmount;
+
+        const percentage = amount / maxAmount ?? 0 // 비율 계산 (0 ~ 1)    
+        bar.clear();        
+        bar = this.add.graphics();
+        bar.fillStyle(0x333333, 1); // 어두운 회색 배경
+        bar.fillRect(startX, startY, width, height);
+        // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)
+        if (percentage > 0) {
+            bar.fillStyle(0x00ff00, 1); 
+            bar.fillRect(startX, startY, width * percentage, height);
+        }
+        return {bar:bar, amount:amount, maxAmount:maxAmount, percentage:percentage};
+    }
+    
     make_tileInfo(){
         this.tileInfoContainer = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
         const fontStyle ={
@@ -584,31 +637,23 @@ export default class UIScene extends Phaser.Scene {
         const bg = this.add.rectangle(0,0, width,height, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         
         let num = ''
-        if(data.labor!=null ) num = '('+data.labor+')';
+        if(data.isWorkable ) num = `(${data.labor}/${data.maxLabor})`;
         if(data.type == 'house') num = `(${data.amount}/${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
-        const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(20);
+        const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(18);
 
         let text = `${data.type} ${data.resource? ': '+data.resource :''}`
         const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
 
-        const slotTxt = this.add.text(width-5, 5, data.slot!=null? `slot: ${data.slot}`:'', fontStyle).setOrigin(1,0).setAlign('right').setFontSize(20);
+        const slotTxt = this.add.text(width-5, 5, data.slot!=null? `slot: ${data.slot}`:'', fontStyle).setOrigin(1,0).setAlign('right').setFontSize(16);
 
         const icon = this.add.image(4,12,'icon').setOrigin(0);
 
-        const percentage = data.amount!=null ? data.amount / data.maxAmount :0 ; // 비율 계산 (0 ~ 1)
-        const bar = this.add.graphics();
-        // [배경 회색 상자] 중심점 기준으로 그리기 위해 -width/2, -height/2 적용
-        bar.fillStyle(0x333333, 1); // 어두운 회색 배경
-        bar.fillRect(0, height-10, width, 10);
 
-        // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)
-        if (percentage > 0) {
-            bar.fillStyle(0x00ff00, 1); 
-            bar.fillRect(0, height-10, width * percentage, 10);
-        }
-
-
+        let bar = this.add.graphics();
+        const barData = this.renderPercentageBar(bar, data, 0,height-10, width, 10)
+        bar = barData.bar;
+       
 
         container.add([bg,nameTxt,infoTxt,slotTxt, icon, bar]);
         container.bar = bar;
@@ -640,6 +685,7 @@ export default class UIScene extends Phaser.Scene {
     }
     renderTileInfoList(tileData ){
         this.clearTileInfoList();
+        this.captureButton.setVisible(false);
         const items = this.tileInfoContainer.items;
 
         if(tileData.rad>0){
@@ -673,6 +719,7 @@ export default class UIScene extends Phaser.Scene {
                  container.on('pointerdown', () => {
                     //서브항목 호출
                     if(tileData.team!=1) return;
+                    this.calculateData();
                     this.renderSubTileInfo(data, true);
                     this.forceUpdateTileInfo();
                     this.renderResourceBar();
@@ -688,28 +735,20 @@ export default class UIScene extends Phaser.Scene {
             if(tileData.team<1){
                 
                 obj = { tag:'captureTheSector', type:'', conquest:true};
-                color = 0xffe449;
-            }
-            if(tileData.team>1){
-                obj = { tag:'attack', type:'', conquest:true};
-                color =0xff2d2a;
-            }
-            
-                 const addFacilityBt = this.make_tileInfoContainer(tileData.team, obj, 
-                    items.facilityContainer.x+15, items.facilityContainer.y + tileData.facility.length*70 +45,
-                    color);
-                 addFacilityBt.on('pointerdown', () => {
-                    if(tileData.team==1){
-                        if(addFacilityBt.itemData !=null){
-                            this.renderSubTileInfo(addFacilityBt.itemData, true);
-                        }
-                        this.forceUpdateTileInfo();
-                        this.renderResourceBar();
-                    }
-                    if(tileData.team<1){
-                        //지역 점령
-                        const path = metaMap.calculatePath(tileData.q, tileData.r, true);
+                color = 0x43c563;
+                //지역 점령
+                 this.captureButton.setVisible(true);
+                 this.captureButton.nameText.setText(LanguageData.getText('txt_capture'));
+                 this.captureButton.bg.setFillStyle( color )
+                 this.captureButton.off('pointerdown');
+                 this.captureButton.on('pointerdown', ()=>{
+                    const path = metaMap.calculatePath(tileData.q, tileData.r, true);
+                    
+                    const confirm2 = ()=>{ };
+                    const confirm1 = ()=>{
+                        //점령 확인
                         if(path.length ==0){  
+                            this.captureButton.setVisible(false);
                             console.warn('no path'); 
                             return;
                         }else{
@@ -717,69 +756,95 @@ export default class UIScene extends Phaser.Scene {
                             if(GameData.saveData.fuel - path.length>=0){
                                 GameData.saveData.fuel -= path.length;
                             }else{
+                                this.captureButton.setVisible(false);
                                 console.warn('no fuel'); 
                                 return;
                             }
                         }
-                        const confirm2 = ()=>{ };
-                        const confirm1 = ()=>{
-                            //점령 확인
+                        
+                        tileData.team = 1;
+                        GameData.saveData.fuel -= path.length;
+                        metaMap.renderHexTile(tileData.r, tileData.q);
+                        metaMap.hexTileFogVisible( tileData.r, tileData.q);
+                        this.calculateData();
+                        //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
+                        this.forceUpdateTileInfo();
+                        this.renderResourceBar();
+                    }
+                    this.make_tileDecisionInfo(LanguageData.getText('txt_capture'),
+                        `${LanguageData.getText('txt_captureinfo')}\n\n Fuel: -${path.length}`,
+                        confirm1, confirm2);
+
+                })
+            }
+            else if(tileData.team>1){
+                obj = { tag:'attack', type:'', conquest:true};
+                color =0xff2d2a;
+                this.captureButton.setVisible(true);
+                this.captureButton.nameText.setText(LanguageData.getText('txt_attack'));
+                 this.captureButton.bg.setFillStyle( color )
+                 this.captureButton.off('pointerdown');
+                 this.captureButton.on('pointerdown', ()=>{
+
+                 
+                    const path = metaMap.calculatePath(tileData.q, tileData.r, true);
+                    const confirm2 = ()=>{ 
+                        //수동공격
+                        this.captureButton.setVisible(false);
+                        //this.scene.close();
+                    };
+                    const confirm1 = ()=>{
+                        //자동공격 (WIP)
+                        //주둔군 편성 및 추가 기능을 넣어야함... 
+                        this.captureButton.setVisible(false);
+                        if(Math.random() < 0.4){
+                            console.warn('패배했습니다')
+                        }else{
+                            console.warn('전투 승리, 지역을 점령합니다.')
                             tileData.team = 1;
                             GameData.saveData.fuel -= path.length;
+                            if(tileData.garrison.length>0){
+                                //주둔군이 있는 경우
+                                for(let i = 0 ; i < tileData.garrison.length ; i++){
+                                    const inf = tileData.garrison[i];
+                                    inf.team = 1;
+
+                                }
+                            }
                             metaMap.renderHexTile(tileData.r, tileData.q);
                             metaMap.hexTileFogVisible( tileData.r, tileData.q);
-                            //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
-                            this.forceUpdateTileInfo();
-                            this.renderResourceBar();
                         }
-                        this.make_tileDecisionInfo(LanguageData.getText('txt_capture'),
-                         `${LanguageData.getText('txt_captureinfo')}\n\n Fuel: -${path.length}`,
-                         confirm1, confirm2);
+                        //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
+                        this.forceUpdateTileInfo();
+                        this.renderResourceBar();
+                        this.turnEnd();
                     }
-                    if(tileData.team>1){
-                        //공격
-                        const path = metaMap.calculatePath(tileData.q, tileData.r, true);
-                         const confirm2 = ()=>{ 
-                            //수동공격
-                            //this.scene.close();
-                         };
-                        const confirm1 = ()=>{
-                            //자동공격 (WIP)
-                            //주둔군 편성 및 추가 기능을 넣어야함... 
-                            if(Math.random() < 0.4){
-                                console.warn('패배했습니다')
-                            }else{
-                                console.warn('전투 승리, 지역을 점령합니다.')
-                                tileData.team = 1;
-                                GameData.saveData.fuel -= path.length;
-                                if(tileData.garrison.length>0){
-                                    //주둔군이 있는 경우
-                                    for(let i = 0 ; i < tileData.garrison.length ; i++){
-                                        const inf = tileData.garrison[i];
-                                        inf.team = 1;
-
-                                    }
-                                }
-                                metaMap.renderHexTile(tileData.r, tileData.q);
-                                metaMap.hexTileFogVisible( tileData.r, tileData.q);
-                            }
-                            //metaMap.events.emit(GameEvents.RENDER_TILE, {r:this.tileData.r, q:this.tileData.q, team:1} );
-                            this.forceUpdateTileInfo();
-                            this.renderResourceBar();
-                            this.turnEnd();
+                    const dec = this.make_tileDecisionInfo(
+                        LanguageData.getText('txt_attack'),
+                        `${LanguageData.getText('txt_attackinfo')}\n\n Fuel: -${path.length}` ,
+                        confirm1, confirm2);
+                    dec.items.btA.nameTxt.setText(LanguageData.getText('attack_auto'));
+                    dec.items.btB.nameTxt.setText(LanguageData.getText('attack_manual'));
+                })
+            }
+            else{
+                const addFacilityBt = this.make_tileInfoContainer(tileData.team, obj, 
+                items.facilityContainer.x+15, items.facilityContainer.y + tileData.facility.length*70 +45,
+                color);
+                addFacilityBt.on('pointerdown', () => {
+                    if(tileData.team==1){
+                        if(addFacilityBt.itemData !=null){
+                            this.renderSubTileInfo(addFacilityBt.itemData, true);
                         }
-                        const dec = this.make_tileDecisionInfo(
-                            LanguageData.getText('txt_attack'),
-                            `${LanguageData.getText('txt_attackinfo')}\n\n Fuel: -${path.length}` ,
-                         confirm1, confirm2);
-                        dec.items.btA.nameTxt.setText(LanguageData.getText('attack_auto'));
-                        dec.items.btB.nameTxt.setText(LanguageData.getText('attack_manual'));
-                        
+                        this.forceUpdateTileInfo();
+                        this.renderResourceBar();
                     }
                     
                 });    
                 items.facilityList.push(addFacilityBt);
                 this.tileInfoContainer.add(addFacilityBt);
+            }
+                
             
            
             
@@ -808,6 +873,7 @@ export default class UIScene extends Phaser.Scene {
 
     }
     forceUpdateTileInfo(){
+        //this.calculateData();
         if(this.tileData){
            // this.renderSubTileInfo(null,false);
             const metaMap = this.scene.get('metaMap');
@@ -858,9 +924,25 @@ export default class UIScene extends Phaser.Scene {
         const data = GameData.saveData;
         //metaMap.calculateResource(false);
         //인벤토리 구현 및 아이템 sum 후 수치표현
+        //console.log(data)
+
+        
+        const foodType = {fresh:0, perm:0}
+        for(let n = 0; n<data.foods.length ; n++){
+            const item = data.foods[n];
+            foodType[item.fresh]+= item.num;    
+        }
+        data.food = foodType.fresh + foodType.perm;
+
+        data.misc = 0;
+        for(let n = 0; n<data.miscs.length ; n++){
+            const item = data.miscs[n];
+            data.misc += item.num; 
+        }
+
         ctn.manPowerText.setText(`${data.manPower}/${data.pop.length} 🏠${data.house}`);
         ctn.ammoText.setText(`${data.ammo}`);
-        ctn.foodText.setText(`${data.food}`);
+        ctn.foodText.setText(`${foodType.fresh}/${foodType.perm}`);
         ctn.miscText.setText(`${data.misc}`);
         ctn.fuelText.setText(`${data.fuel}`);
 
@@ -935,13 +1017,42 @@ export default class UIScene extends Phaser.Scene {
 
         const padding = 180;
         const manPower = this.makeResourceButton(startX,startY,160,50, '👤',` 0/0/10`);
+        manPower.on('pointerdown', ()=>{
+            const data = GameData.saveData;
+            let txt = `house: ${data.house} \npopList: ${data.pop.length}\n`;
+            for(let n = 0; n<data.pop.length ; n++){
+                const person = data.pop[n];
+            }
+            console.warn(txt)
+            console.table(data.pop);
+        })
+        
 
         const ammo = this.makeResourceButton(startX+padding*1, startY,160,50,'🔫', `0/1000`);
 
          
         const food = this.makeResourceButton(startX+padding*2,startY,160,50, '🥔',`0/1000`); 
+        food.on('pointerdown', ()=>{
+            const data = GameData.saveData;
+            const foodType = {fresh:0, perm:0}
+            for(let n = 0; n<data.foods.length ; n++){
+                const item = data.foods[n];
+                foodType[item.fresh]+= item.num;    
+            }
+            console.warn(`fresh: ${foodType.fresh}/ perm: ${foodType.perm}`);
+            console.table( data.foods )
+        })
 
         const misc = this.makeResourceButton(startX+padding*3,startY,160,50, '⚙️', `0/1000`);
+         misc.on('pointerdown', ()=>{
+            const data = GameData.saveData;
+            let txt = '';
+            for(let n = 0; n<data.miscs.length ; n++){
+                const item = data.miscs[n];  
+                txt+= `* ${item.tag}: ${item.num} \n`;
+            }
+            console.warn(`Miscs: ${data.misc}\n${txt}`);
+        })
 
 
         const fuel = this.makeResourceButton(startX+padding*4,startY,160,50, '⛽',`0/1000`); //
@@ -1082,8 +1193,14 @@ export default class UIScene extends Phaser.Scene {
             }
         });
     }
+    calculateData(){
+        const metaMap = this.scene.get('metaMap');
+        const res= calculateResourceData(metaMap);
+        this.renderResourceBar( res );
+    }
     turnEnd(){
         this.registry.events.emit(GameEvents.TURN_END, true);
+        this.calculateData();
         this.forceUpdateTileInfo();
         this.renderSubTileInfo(null,false);
         this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
@@ -1108,6 +1225,7 @@ export default class UIScene extends Phaser.Scene {
         container.add([bg, nameTxt]);
         container.bg = bg;
         container.nameTxt = nameTxt;
+        container.nameText = nameTxt;
         return container;
     }
 }

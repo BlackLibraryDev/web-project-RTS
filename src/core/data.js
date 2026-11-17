@@ -56,7 +56,8 @@ export function addMenpower(num=1, array = null){
         a.push( { tag: names[Phaser.Math.Between(0,names.length-1)] ,
                  type:Phaser.Math.Between(1,2), 
                  hunger: Phaser.Math.Between(2,4), 
-                 age:Phaser.Math.Between(18,36)
+                 age:Phaser.Math.Between(18,36),
+                 work:''
             } );
     }
     return a;
@@ -121,7 +122,7 @@ export function parseTSVToMap(tsvText, keyField = 'tag') {
  * @param {string} facilityKey - 예: 'GasTank', 'JunkMine' 등
  * @returns {Object|null} 독립된 속성을 가진 시설 데이터 객체
  */
-export function createFacilityData(facilityKey) {
+export function createFacilityData(facilityKey, option={}) {
     //console.log(GameData.facilities.gasTank.amount); // 500
     const template = GameData.facilities[facilityKey];
     if (!template) {
@@ -130,6 +131,13 @@ export function createFacilityData(facilityKey) {
     }
     //특정 랜덤값 계산
     const data = { ...template };
+
+    data.buildTime = 0;
+    if(data.status =='building'){
+        data.amount = data.amount? 0 : null;
+        
+    }
+
     if(data.type =='house'){
         //집 공간 랜덤값
         if(data.maxAmount !=null){
@@ -138,24 +146,26 @@ export function createFacilityData(facilityKey) {
             }
             
             if(data.maxAmount>0){
-                data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
+                if(data.amount< data.maxAmount){
+                    data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
+                }else{
+                    data.pop = addMenpower( data.amount);
+                }
+                
             }else{
-                data.pop = []
+                data.pop = [];
             }
-            data.amount = data.pop.length;
-
-            
+            data.amount = data.pop.length;            
             //console.log(data.pop);
         }
     }
-    if(data.type=='mine'){
+    if(data.type=='resource'){
         //광산 자원 랜덤값
         data.amount = Phaser.Math.Between( 0, data.maxAmount);
     }
     if(data.type=='farm'){
-
         data.turnEnd = ()=>{
-            console.log(`farm ${data.tag} : ` );
+           // console.log(`farm ${data.tag} : ` );
             return data;
         }
     }
@@ -167,7 +177,7 @@ export function createFacilityData(facilityKey) {
         }
     }
     if(data.cost!=null){
-        const cost = data.cost.split(';');
+        const cost = data.cost.split(',');
         let spent ={};
         for(let i =0 ; i< cost.length ; i++){
             if(cost[i].length>0){
@@ -178,12 +188,47 @@ export function createFacilityData(facilityKey) {
         }
         data.cost = spent;
     }
-    if(data.maxLaborTime!= null){
-        data.laborTime = 0;
+    if(data.output!=null){
+        const split = data.output.split(",");
+        let _output = [];
+        for(let i =0 ; i<split.length ;i++){
+            if(split[i].length>0){
+                //ex) mouse:2-8-0.3  => getItem /  Between()
+                const item = split[i].split(':');
+                const num = item[1].split('-');
+                const min = Number(num[0]) ?? 1;  //min 2 ?? 1
+                const max = Number(num[1]) ?? min; //max 8 ?? min
+                const per = num[2] ?? 1 // percentage% or 100%
+                _output.push( {tag:String(item[0]), min:min,max:max, percentage:per });
+            }
+        }
+        data.output = _output;
     }
-    //전용 함수선언
+
+    if(data.isWorkable){
+        data.maxLaborBackup = Number(data.maxLabor);
+    }
     
 
-    // 전개 연산자(...)를 사용해 원본과 참조가 끊긴 새로운 객체(복사본) 반환
+    //option
+    Object.keys(option).forEach((item) => {
+        data[item] = option[item];
+    });
+
+
     return data
+}
+
+export function getItem(tag, num){
+    const item = {tag:tag, num:num}
+    if(tag=='mouse' ){
+        item.type ='food';
+        item.fresh = 'fresh';
+    }else{
+        item.type='food';
+        item.fresh = 'perm';
+    }
+
+
+    return item;
 }

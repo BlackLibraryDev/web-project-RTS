@@ -9,7 +9,7 @@ import { getHexLine , axialToPixel } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
-import { GameData, createFacilityData } from './core/data.js';
+import { GameData, createFacilityData, addMenpower, getItem } from './core/data.js';
 import { calculateResourceData } from './core/calculateTurn.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
@@ -83,6 +83,7 @@ export default class metaMap extends Phaser.Scene {
                 }
 
                 
+                //const foods = [getItem('mouse', 20) , getItem('can_tuna', 10) ];
 
                 this.mapDatas[r][q] = { 
                     id: terrainId , 
@@ -90,6 +91,7 @@ export default class metaMap extends Phaser.Scene {
                     tag: terrainType.tag,
                     name:terrainType.name, 
                     team:teamNum,
+                   // foods:foods,
                     q:q, 
                     r:r,
                     slot:maxNum,
@@ -111,10 +113,12 @@ export default class metaMap extends Phaser.Scene {
         playerTile.team =1; 
         if(Object.keys( playerTile.facility).find((key) => playerTile.facility[key].type === 'house')){
             //console.log('집이 있음')
+            playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }else{
-            playerTile.facility.push( createFacilityData( 'baseCamp') )
+            playerTile.facility.push( createFacilityData( 'baseCamp') );
+            playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }
-        
+        playerTile.pop = addMenpower( 6);
         for(let i = 0; i<playerTile.garrison.length ; i++){
             playerTile.garrison[i].team = 1;
         }
@@ -140,7 +144,7 @@ export default class metaMap extends Phaser.Scene {
         let dobuleClickedTile = null;
         this.events.on(GameEvents.TILE_CLICKED, (clickedTile) => {
             uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
-            
+            uiScene.renderResourceBar();
 
             // 1. 이미 진행 중인 더블클릭 타이머가 있다면 -> '두 번째 클릭' (더블탭 성공!)
             if (this.doubleClickTimer!=null ) {
@@ -223,7 +227,7 @@ export default class metaMap extends Phaser.Scene {
             if(isTurnEnd){
                 //턴 종료 시
                 //turn ++ 
-                console.warn('turnEnd', res[1]);
+                console.warn('turnEnd');
             }
             uiScene.renderResourceBar( res, isTurnEnd );
             
@@ -294,129 +298,6 @@ export default class metaMap extends Phaser.Scene {
     calculateResource(isTurnEnd=false){
 
         return ;
-        //자원 총합 계산
-        const data = GameData.saveData;
-        const res0 = {
-            house :0,
-            manPower:0,
-            birth:0,
-            death:0,
-            ammo:0,
-            misc:0,
-            food:0,
-            fuel:0,
-            miscs:[],
-            foods:[],
-        }
-        const res = [this.objectCopy(res0) , this.objectCopy(res0), this.objectCopy(res0) ] ;
-        for(let r = 0; r < this.mapDatas.length; r++) {
-            for(let q = 0; q < this.mapDatas[r].length; q++) {
-                const mapdata = this.mapDatas[r][q];
-                const facility = mapdata.facility;
-                const garrison = mapdata.garrison;
-                const team = mapdata.team;
-                
-                for(let i = 0; i < facility.length ; i++){
-                    //시설물 보너스 계산 
-                    const fs = facility[i];
-                    if(fs.amount!=null ){
-                        if(fs.amount>0){
-                            
-                            switch(fs.type){
-                                case 'house':
-                                    
-                                    res[team].house += fs.amount;
-                                    break;
-                            }
-                            if(isTurnEnd){
-                                //턴 넘길 때만 계산하기
-                                if(fs.turnEnd!=null) {
-                                    const r = fs.turnEnd();
-                                }
-                                if(fs.labor>0){
-                                    const delta = fs.amount*fs.labor>10 ? 10 : fs.amount *fs.labor;
-                                    //res[team][fs.resource] += delta;
-                                    fs.amount -= delta;
-
-                                    const pushItems= (array, item)=>{
-
-                                        for(let n =0 ; n < array.length ; n++ ){
-                                            if(array[n].tag == item.tag){
-                                                array[n].num += item.num;
-                                                return;
-                                            }
-                                        }
-                                        array.push( item );
-                                        return;
-                                    }
-                                    if(fs.type=='mine'){
-                                        if(fs.resource=='misc'){
-                                            pushItems( res[team].miscs,{tag:'misc', num:delta });
-                                        }
-                                        if(fs.resource=='scrapIron'){
-                                            for(let c =0 ; c<delta ; c++){
-                                                if(Math.random()<0.7){
-                                                    pushItems( res[team].miscs,{tag:'scrapIron', num:1 });
-                                                }else{
-                                                    pushItems( res[team].miscs,{tag:'misc', num:1 });
-                                                }
-                                            }
-                                            
-                                        }
-                                    }
-                                    
-                                    if(fs.type=='farm'){
-                                        //농사의 경우 
-                                        
-                                        pushItems( res[1].foods,{tag:fs.resource, num:Phaser.Math.Between( 1,10) });
-                                        
-                                    }
-                                }
-                            }
-                           
-                        }else{
-                            //자원 소진의 경우
-                            fs.amount = 0;
-                        }
-                        
-                    }
-
-                }
-                
-                
-            }
-        }
-        if(isTurnEnd){
-            //식량 소모
-            //const data = GameData.saveData;
-            //console.log( res[1].miscs );
-            //console.log( res[1].foods );
-            for(let i = 0 ;i <data.pop.length ; i++){
-                const person = data.pop[i];
-                
-                if(data.food +res[1].food >0){
-                   // data.food --;
-                    //console.log(data.food)
-                    res[1].food--;
-                }else{
-                    person.hunger -= 1;
-                }
-                if(person.hunger<=0){
-                    res[1].death++;
-                    console.warn(`${person.tag}가 굶주림으로 사망했습니다/탈주했습니다` );
-                    data.manPower--;
-                    data.pop.splice(i,1);
-                    i--;
-
-                }
-            }
-            
-        }
-
-        data.house = res[1].house;
-        
-        return res;
-        //GameData.save();
     }
     ////////////////////////////////////////////////////////////////////////////////////////
     hexTileFogVisible( r, q) {
