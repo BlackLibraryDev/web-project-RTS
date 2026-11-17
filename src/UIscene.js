@@ -2,7 +2,7 @@
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
 import { GameData, createFacilityData } from './core/data.js';
-import { calculateResourceData, objectCopy } from './core/calculateTurn.js';
+import { calculateResourceData, objectCopy, returnMapData } from './core/calculateTurn.js';
 
 export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
 
@@ -895,6 +895,9 @@ export default class UIScene extends Phaser.Scene {
         }
         this.tileData = tileData;
         const items = this.tileInfoContainer.items;
+        //디버그
+        //console.log(tileData.res);
+
         if(tileData.explored && tileData.name != 'empty'){
 
             if(items.tileImage)  items.tileImage.setTexture(`tile_${tileData.name}` ?? 'tile_fog');
@@ -921,18 +924,37 @@ export default class UIScene extends Phaser.Scene {
         const manpower = {baby:0, child:0, adult:0, house:0 }
         //ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
 
+         const metaMap = this.scene.get('metaMap');
+            const res0 = returnMapData(metaMap);
+            const res1 = res0[1];
+            const count = {fresh:0, perm:0, house:0, labor:0}
+           // console.log(res[1])
+            for(let n =0 ; n < res1.length; n++){
+                const tileRes = res1[n].res;
+                count.house+= tileRes.house;
+                count.labor+= tileRes.labor;
+                //console.table(tileRes.foods)
+                for(let i = 0 ; i<tileRes.foods.length ;i++){
+                    const food = tileRes.foods[i];
+                    count[food.fresh]+=food.num;
+                }
+            }
+           //console.warn(`Total foods: \nfresh: ${count.fresh}/ perm: ${count.perm}`);
+
         const data = GameData.saveData;
         //metaMap.calculateResource(false);
         //인벤토리 구현 및 아이템 sum 후 수치표현
         //console.log(data)
 
         
-        const foodType = {fresh:0, perm:0}
+        /*const foodType = {fresh:0, perm:0}
         for(let n = 0; n<data.foods.length ; n++){
             const item = data.foods[n];
             foodType[item.fresh]+= item.num;    
         }
         data.food = foodType.fresh + foodType.perm;
+        */
+        data.food = count.fresh+count.perm;
 
         data.misc = 0;
         for(let n = 0; n<data.miscs.length ; n++){
@@ -940,9 +962,9 @@ export default class UIScene extends Phaser.Scene {
             data.misc += item.num; 
         }
 
-        ctn.manPowerText.setText(`${data.labor}/${data.pop.length} 🏠${data.house}`);
+        ctn.manPowerText.setText(`${count.labor}/${data.pop.length} 🏠${count.house}`);
         ctn.ammoText.setText(`${data.ammo}`);
-        ctn.foodText.setText(`${foodType.fresh}/${foodType.perm}`);
+        ctn.foodText.setText(`${count.fresh}/${count.perm}`);
         ctn.miscText.setText(`${data.misc}`);
         ctn.fuelText.setText(`${data.fuel}`);
 
@@ -1018,13 +1040,33 @@ export default class UIScene extends Phaser.Scene {
         const padding = 180;
         const manPower = this.makeResourceButton(startX,startY,160,50, '👤',` 0/0/10`);
         manPower.on('pointerdown', ()=>{
+            /*
             const data = GameData.saveData;
             let txt = `house: ${data.house} \npopList: ${data.pop.length}\n`;
             for(let n = 0; n<data.pop.length ; n++){
                 const person = data.pop[n];
             }
-            console.warn(txt)
+            console.warn(txt);
             console.table(data.pop);
+            */
+            const metaMap = this.scene.get('metaMap');
+            const res = returnMapData(metaMap);
+            const res1 = res[1];
+            const count = {house:0, labor:0 }
+           // console.log(res[1])
+            for(let n =0 ; n < res1.length; n++){
+                const tileRes = res1[n].res;
+                count.house+= tileRes.house;
+                count.labor+= tileRes.labor;
+                for(let i = 0; i<res1[n].facility.length ; i++){
+                    const facil = res1[n].facility[i];
+                    if(facil.type=='house'){
+                        console.table(facil.pop)
+                    }
+                }
+            }
+            console.warn(`labor:${count.labor}, house: ${count.house}`)
+            
         })
         
 
@@ -1033,14 +1075,33 @@ export default class UIScene extends Phaser.Scene {
          
         const food = this.makeResourceButton(startX+padding*2,startY,160,50, '🥔',`0/1000`); 
         food.on('pointerdown', ()=>{
-            const data = GameData.saveData;
+           
+            
+
+            /*
             const foodType = {fresh:0, perm:0}
+             const data = GameData.saveData;
             for(let n = 0; n<data.foods.length ; n++){
                 const item = data.foods[n];
                 foodType[item.fresh]+= item.num;    
             }
             console.warn(`fresh: ${foodType.fresh}/ perm: ${foodType.perm}`);
             console.table( data.foods )
+            */
+            const metaMap = this.scene.get('metaMap');
+            const res = returnMapData(metaMap);
+            const res1 = res[1];
+            const count = {fresh:0, perm:0}
+           // console.log(res[1])
+            for(let n =0 ; n < res1.length; n++){
+                const tileRes = res1[n].res;
+                console.table(tileRes.foods)
+                for(let i = 0 ; i<tileRes.foods.length ;i++){
+                    const food = tileRes.foods[i];
+                    count[food.fresh]+=food.num;
+                }
+            }
+           console.warn(`Total foods: \nfresh: ${count.fresh}/ perm: ${count.perm}`);
         })
 
         const misc = this.makeResourceButton(startX+padding*3,startY,160,50, '⚙️', `0/1000`);

@@ -229,6 +229,6 @@ export function getItem(tag, num , option={}){
         return null;
     }
     const item = { ...template };
-    item.num = num;
+    item.num = Phaser.Math.Clamp( num,1,100);
     return item;
 }

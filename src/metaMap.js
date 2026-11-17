@@ -10,7 +10,7 @@ import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
 import { GameData, createFacilityData, addMenpower, getItem } from './core/data.js';
-import { calculateResourceData } from './core/calculateTurn.js';
+import { calculateResourceData , objectCopy, res0} from './core/calculateTurn.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -58,11 +58,15 @@ export default class metaMap extends Phaser.Scene {
             this.mapDatas[r] = [];
             for(let q = 0; q < this.mapGrid[r].length; q++) {
                 const terrainId = this.mapGrid[r][q];
-                const terrainType = Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY;
+                const terrainType ={ ... Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY };
                 let facilityList = [];
                 let garrisonList = [];
                 let teamNum = 0;
                 let maxNum =terrainType.slot; 
+                const res = this.objectCopy(res0);
+                res.foods =[];
+                res.miscs=[];
+                res.pop = [];
 
                 if(terrainType.name=='redwood' || terrainType.name=='mountain'){
                    
@@ -87,11 +91,11 @@ export default class metaMap extends Phaser.Scene {
 
                 this.mapDatas[r][q] = { 
                     id: terrainId , 
-                    type: {... terrainType }, 
+                    type: terrainType , 
                     tag: terrainType.tag,
                     name:terrainType.name, 
                     team:teamNum,
-                   // foods:foods,
+                    res:res,
                     q:q, 
                     r:r,
                     slot:maxNum,
@@ -118,7 +122,7 @@ export default class metaMap extends Phaser.Scene {
             playerTile.facility.push( createFacilityData( 'baseCamp') );
             playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }
-        playerTile.pop = addMenpower( 6);
+        
         for(let i = 0; i<playerTile.garrison.length ; i++){
             playerTile.garrison[i].team = 1;
         }
