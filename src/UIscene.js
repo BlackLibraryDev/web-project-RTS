@@ -940,7 +940,7 @@ export default class UIScene extends Phaser.Scene {
             data.misc += item.num; 
         }
 
-        ctn.manPowerText.setText(`${data.manPower}/${data.pop.length} 🏠${data.house}`);
+        ctn.manPowerText.setText(`${data.labor}/${data.pop.length} 🏠${data.house}`);
         ctn.ammoText.setText(`${data.ammo}`);
         ctn.foodText.setText(`${foodType.fresh}/${foodType.perm}`);
         ctn.miscText.setText(`${data.misc}`);

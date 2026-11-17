@@ -34,7 +34,7 @@ export function pushItems(array, incoming) {
 }
 export const res0 = {
     house :0,
-    manPower:0,
+    labor:0,
     birth:0,
     death:0,
     ammo:0,
@@ -127,8 +127,8 @@ export function calculateResourceData(scene, isTurnEnd=false){
         for(let q = 0; q < scene.mapDatas[r].length; q++) {
             const mapdata = scene.mapDatas[r][q];
             const facility = mapdata.facility;
-            const garrison = mapdata.garrison;
-            const team = mapdata.team;
+            //const garrison = mapdata.garrison;
+            //const team = mapdata.team;
             for(let i = 0; i < facility.length ; i++){
                 const facil = facility[i];
 
@@ -164,7 +164,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
             for(let q = 0; q < scene.mapDatas[r].length; q++) {
                 const mapdata = scene.mapDatas[r][q];
                 const facility = mapdata.facility;
-                const garrison = mapdata.garrison;
+                //const garrison = mapdata.garrison;
                 const team = mapdata.team;
 
                 //delta[1].pop.sort((a, b) => a.hunger - b.hunger); //배고픔 순으로 정렬
@@ -172,37 +172,43 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                 for(let i = 0; i < facility.length ; i++){
                     const facil = facility[i];
-                    
-                    if(facil.type=='resource'){
-                    //자원의 경우
-                    }
-                    
-                    if(facil.type=='farm'){
-                        //amount가 꽉 차야 작업시작
-                        if(facil.amount < facil.buildTime){
-
-                        //식량 추가
-                        }else{
+                    if(facil.status == ''){
+                       //amount가 꽉 차야 작업시작
+                        if(facil.amount>0 ){
+                            //식량 추가
+                            
                             for(let n = 0; n< facil.labor ; n++){
                                 //노동자 수 만큼 자원획득
                                 for(let f = 0 ; f < facil.output.length ; f++){
                                     const d = facil.output[f];
                                     //console.log(d)
-                                    if(Math.random() <= d.percentage){
-                                        const item =getItem(d.tag, Phaser.Math.Between(d.min, d.max ));
-                                        pushItems(res[team].foods, item  );
-                                        pushItems(delta[team].foods, item );
+                                    if(facil.amount>0){
+                                        if(Math.random() <= d.percentage){
+                                            const item = getItem(d.tag, Phaser.Math.Between(d.min, d.max ));
+                                            pushItems(res[team][item.type], item  );
+                                            pushItems(delta[team][item.type], item );
+                                            facil.amount -= item.num;
+                                        }
+                                    }else{
                                         
                                     }
+                                    
                                     
                                 }
                             }
                             
+                        }else {
+                            if(facil.type=='farm'){
+                                facil.buildTime = 0;
+                                facil.status = 'building';
+                            }
+                            facil.amount =0;
+                            
                         }
-                        
-                        
-                        
                     }
+                        
+                        
+                    
                     
                     if(facil.status=='building'){
                         facil.buildTime += facil.labor;
@@ -234,6 +240,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
             if(person.hunger>=0){
                 if(consumeFood( data.foods, 1)){
                     //음식섭취
+                    if(person.hunger<5) person.hunger++;
                     delta[1].food--;
                 }else{
                     person.hunger--;
@@ -260,6 +267,15 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                 n--;
                             }
                         }
+                        //낮은 확률로 인구추가
+                        if(facil.pop.length < facil.maxAmount){
+                            if(Math.random() < 0.1 && team==1){
+                                const person = addMenpower(1);
+                                facil.pop.push(person[0]);
+                                console.warn(`${person[0].tag}(${person[0].age})가 새로 들어왔습니다` );
+                            }
+                        }
+                        facil.amount = facil.pop.length;
                     }
                 }
             }

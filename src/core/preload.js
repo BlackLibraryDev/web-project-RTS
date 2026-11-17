@@ -13,6 +13,8 @@ export default class PreloadScene extends Phaser.Scene {
 
         this.load.text('facilities_tsv', 'assets/data/facilities.tsv');
 
+        this.load.text('items_tsv', 'assets/data/items.tsv');
+
         // 지형별 스프라이트 이미지 로드 (파일명은 자유롭게 지정)
         this.load.image('tile_fog', 'assets/tiles/fog.png');
         this.load.image('tile_water', 'assets/tiles/water.png');
@@ -41,7 +43,8 @@ export default class PreloadScene extends Phaser.Scene {
 
         //facilitis 불러오기
         const facilities = parseTSVToMap(this.cache.text.get('facilities_tsv'), 'tag');
-        GameData.init(facilities ,null,null);
+        const items = parseTSVToMap(this.cache.text.get('items_tsv'), 'tag');
+        GameData.init(facilities , items ,null,null);
         //console.log(GameData.facilities.gasTank.amount); // 500
 
         this.anims.create({

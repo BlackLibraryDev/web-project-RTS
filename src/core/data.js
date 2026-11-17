@@ -4,11 +4,14 @@ export const GameData = {
     facilities: {},
     terrains: {},
     units: {},
+    items: {},
     // ⭕ [필수 추가] preload.js에서 호출하고 있는 init 메서드 정의
-    init(facilities = {}, terrains = {}, units = {}) {
+    init(facilities = {}, items ={},terrains = {}, units = {}) {
         this.facilities = facilities;
+        this.items = items;
         this.terrains = terrains;
         this.units = units;
+        //console.log(items)
     },
 
     saveData: {
@@ -33,7 +36,7 @@ export const GameData = {
         const resetData = {
             house:0,
             pop:[], //0 아기 1 남자 2여자 (?)
-            manPower:0,
+            labor:0,
             ammo:100,
             food:120,
             fuel:20,
@@ -137,7 +140,7 @@ export function createFacilityData(facilityKey, option={}) {
         data.amount = data.amount? 0 : null;
         
     }
-
+    if(data.status==null) data.status='';
     if(data.type =='house'){
         //집 공간 랜덤값
         if(data.maxAmount !=null){
@@ -219,16 +222,13 @@ export function createFacilityData(facilityKey, option={}) {
     return data
 }
 
-export function getItem(tag, num){
-    const item = {tag:tag, num:num}
-    if(tag=='mouse' ){
-        item.type ='food';
-        item.fresh = 'fresh';
-    }else{
-        item.type='food';
-        item.fresh = 'perm';
+export function getItem(tag, num , option={}){
+    const template = GameData.items[tag] //{tag:tag, num:num}
+    if (!template) {
+         console.warn(`[Items] 존재하지 않는 아이템입니다: ${tag}`);
+        return null;
     }
-
-
+    const item = { ...template };
+    item.num = num;
     return item;
 }
