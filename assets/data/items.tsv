@@ -1,13 +1,13 @@
-tag	type	subType	fresh	icon	value
+tag	type	subType	freshDay	icon	value
+misc	miscs	misc			1
 wood	miscs	wood		🪵	1
 water	miscs	water			1
 gas	miscs	gasolin			1
 plasticBottle	miscs	plastic		🫙	1
 scrapIron	miscs	iron			1
-beef	foods	meat	fresh		1
-can_been	foods	can	perm		2
-can_tuna	foods	can	perm		2
-venison	foods	meat	fresh		1
-misc	miscs	misc			1
-mouse	foods	meat	fresh		1
-fish	foods	fish	fresh		1
+beef	foods	meat	2		1
+can_been	foods	can	120		2
+can_tuna	foods	can	120		2
+venison	foods	meat	2		1
+mouse	foods	meat	2		1
+fish	foods	fish	2		1

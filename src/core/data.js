@@ -230,5 +230,13 @@ export function getItem(tag, num , option={}){
     }
     const item = { ...template };
     item.num = Phaser.Math.Clamp( num,1,100);
+
+    if(item.freshDay!=null){
+        if(item.freshDay>20){
+            item.fresh='perm';
+        }else{
+            item.fresh = 'fresh'
+        }
+    }
     return item;
 }

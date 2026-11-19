@@ -328,11 +328,11 @@ export default class UIScene extends Phaser.Scene {
                 if(data.status =='building'){
                     items.infoText.setText(`status: ${data.status}`);
                 }else{
-                    items.infoText.setText(`Estimate income: \n`);
+                    items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n`);
                     if(data.output!=null){
                         for(let i =0 ; i<data.output.length;i++){
                             const item = data.output[i];
-                            items.infoText.text += `${item.tag}: +${item.min}~${item.max} per labor`;
+                            items.infoText.text += `+ ${item.tag}: +${item.min}~${item.max} per labor\n`;
                         }
                     }
                     

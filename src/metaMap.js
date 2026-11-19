@@ -274,9 +274,9 @@ export default class metaMap extends Phaser.Scene {
             for(let i = 0; i <array.length ; i++){
                 if(Math.random()<0.7){
                     
-                    array[i].type  = TERRAIN_TYPES.VIL.id;
-                    array[i].type = TERRAIN_TYPES.VIL;
-                    array[i].name = TERRAIN_TYPES.VIL.name
+                    array[i].id  = Number( TERRAIN_TYPES.VIL.id );
+                    array[i].type = {...  TERRAIN_TYPES.VIL};
+                    array[i].name = array[i].type.name
                     array[i].rad = Phaser.Math.Between(2,6);
                     let facilityList =[]
                     if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
