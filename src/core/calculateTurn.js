@@ -30,7 +30,6 @@ export function pushItems(array, incoming) {
         if (incoming.type === 'foods' || el.type === 'foods') {
             return el.freshDay === incoming.freshDay;
         }
-
         // 그 외 일반 아이템은 tag만 같으면 합산 대상
         return true;
     });
@@ -126,12 +125,49 @@ export function calculateResourceData(scene, isTurnEnd=false){
                 }
             }
             //if(team==1) console.table(workers)
+            for (let i = 0; i < facility.length; i++) {
+                const facil = facility[i];
+                if (facil.isWorkable) {
+                    facil.labor = 0;
+                }
+            }
+            workers.forEach(w => {
+                // 이 타일의 시설에서 일하던 일꾼이라면 상태 초기화 (필요시 조건 추가)
+                w.work = ''; 
+            });
+
+            // 2. 모든 일터에 1명씩 돌아가며(라운드 로빈) 남은 일꾼이 없을 때까지 배정
+            let assignedInRound = true;
+
+            while (assignedInRound) {
+                assignedInRound = false;
+
+                for (let i = 0; i < facility.length; i++) {
+                    const facil = facility[i];
+                    
+                    // 가동 가능하고 아직 정원(facil.maxLabor)이 차지 않은 시설만 대상
+                    if (facil.isWorkable && facil.labor < facil.maxLabor) {
+                        // 유휴 일꾼(work === '') 1명 찾기
+                        const idleWorker = workers.find(w => w.work === '');
+                        
+                        if (idleWorker) {
+                            idleWorker.work = facil.tag;
+                            facil.labor++;
+                            res[team].labor++;
+                            tileRes.labor--;
+                            assignedInRound = true; // 이번 바퀴에 최소 1명 배정 성공 -> 다음 바퀴 계속 진행
+                        }
+                    }
+                }
+            }
+             
+            /*
             
             for(let i = 0; i < facility.length ; i++){
                 const facil = facility[i];
                 facil.labor = 0;
 
-                if(facil.isWorkable){
+                if(facil.isWorkable ){
                     for(let n = 0 ; n< workers.length ; n++){
                         if(facil.labor< facil.maxLabor){
                             if(workers[n].work ==''){
@@ -146,6 +182,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                 }
                 
             }
+            */
 
             
            // if(team==1) console.table(workers)
@@ -233,7 +270,13 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                 facil.buildTime = 0;
                                 facil.status = 'building';
                             }
-                            facil.amount =0;
+                            if(facil.status =='building'){
+
+                            }else{
+                                facil.amount =0;
+                                facil.maxLabor = 0;
+                            }
+                            
                             
                         }
                     }
@@ -285,7 +328,11 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                     if(person.hunger<5) person.hunger++;
                                     delta[team].food--;
                                 }else{
-                                    person.hunger--;
+                                    if(team ==1){
+                                        //테스트용, 
+                                         person.hunger--;
+                                    }
+                                   
                                 }
                             }
 
