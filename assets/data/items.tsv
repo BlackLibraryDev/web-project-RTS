@@ -1,13 +1,14 @@
-tag	type	subType	freshDay	icon	value
-misc	miscs	misc			1
-wood	miscs	wood		🪵	1
-water	miscs	water			1
-gas	miscs	gasolin			1
-plasticBottle	miscs	plastic		🫙	1
-scrapIron	miscs	iron			1
-beef	foods	meat	2		1
-can_been	foods	can	120		2
-can_tuna	foods	can	120		2
-venison	foods	meat	2		1
-mouse	foods	meat	2		1
-fish	foods	fish	2		1
+tag	icon	type	subType	freshDay
+misc		miscs	misc	
+wood	🪵	miscs	wood	
+water	💧	miscs	water	
+gas		miscs	gasolin	
+plasticBottle	🫙	miscs	plastic	
+scrapIron		miscs	iron	
+beef	🥩	foods	meat	2
+can_been	🥫	foods	can	120
+can_tuna	🥫	foods	can	120
+venison	🫎	foods	meat	2
+mouse	🐀	foods	meat	2
+fish	🐟	foods	fish	2
+rad	☢	miscs	trash	

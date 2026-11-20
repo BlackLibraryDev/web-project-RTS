@@ -1,4 +1,4 @@
-import { GameData, addMenpower, getItem } from "./data.js";
+import { GameData, addMenpower, getItem , res0 } from "./data.js";
 
 export function objectCopy( object ){
     // 방법 A: 전개 연산자 (...) 사용
@@ -46,19 +46,7 @@ export function pushItems(array, incoming) {
 
     return array;
 }
-export const res0 = {
-    house :0,
-    labor:0,
-    birth:0,
-    death:0,
-    ammo:0,
-    misc:0,
-    food:0,
-    fuel:0,
-    pop:[],
-    miscs:[],
-    foods:[],
-}
+
 export function returnMapData(scene){
     const res=[[],[],[]] ;
      for(let r = 0; r < scene.mapDatas.length; r++) {

@@ -1,16 +1,15 @@
 import { LanguageData } from './translate.js';
 import { GameOptions } from './core/option.js';
 
-import { generateRectangularNoiseMap } from './mapGenerator.js';
+import { generateRectangularNoiseMap , generateRectangularNoiseMapDatas} from './mapGenerator.js';
 import { HEX_SIZE , HexTile, TERRAIN_TYPES } from './HexTile.js';
 
-import { Unit } from './Unit.js';
 import { getHexLine , axialToPixel } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
-import { GameData, createFacilityData, addMenpower, getItem } from './core/data.js';
-import { calculateResourceData , objectCopy, res0} from './core/calculateTurn.js';
+import { GameData, createFacilityData, addMenpower, getItem, createTileData } from './core/data.js';
+import { calculateResourceData } from './core/calculateTurn.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
 export const startY = 150; // 맵 시작 Y 오프셋
@@ -49,11 +48,12 @@ export default class metaMap extends Phaser.Scene {
         this.zoomRatio = GameOptions.config.zoomRatio;
          const uiScene = this.scene.get('UIScene');
         const seedName = 'world'+ Math.floor(Math.random()*100000000)
-        this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
+        //this.mapGrid = generateRectangularNoiseMap(12,10, seedName);
         //console.log(`Random Seed: ${seedName}`);
         uiScene.seedName = seedName;
 
-        this.mapDatas = [];
+        this.mapDatas = generateRectangularNoiseMapDatas( 12,10, seedName);
+        /*
         for(let r = 0; r < this.mapGrid.length; r++) {
             this.mapDatas[r] = [];
             for(let q = 0; q < this.mapGrid[r].length; q++) {
@@ -106,12 +106,13 @@ export default class metaMap extends Phaser.Scene {
                 };
             }
         }
+        */
         //마을 생성
-        this.generateVil(3);
+        this.generateVil(4);
 
 
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
-        this.startingPoint = this.randomStartingPoint();
+        this.startingPoint = this.randomStartingPoint(['vil', 'field', 'redwood']);
         this.hexTileFogVisible(this.startingPoint.r, this.startingPoint.q);
         const playerTile = this.startingPoint.playerTile;
         playerTile.team =1; 
@@ -126,9 +127,11 @@ export default class metaMap extends Phaser.Scene {
         for(let i = 0; i<playerTile.garrison.length ; i++){
             playerTile.garrison[i].team = 1;
         }
+
+        
         this.centerCameraOnTile(this.startingPoint.r, this.startingPoint.q);
         //uiScene.setTileInfo(this.mapDatas[this.startingPoint.r][this.startingPoint.q])
-
+        
 
         // 2. 맵 데이터 바탕으로 인스턴스 배치
         this.generateHexMapFromGrid(this.mapDatas);
@@ -251,17 +254,22 @@ export default class metaMap extends Phaser.Scene {
         return path;
     }
 
-    randomStartingPoint(){
+    randomStartingPoint(tileTag= ['vil']){
          //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
          let randomQ =0;
          let randomR =0;
-         let _playerTile ;
+         let _playerTile  =null;
          while (true){
-            randomQ = Math.floor(Math.random() * this.mapGrid[0].length);
-            randomR = Math.floor(Math.random() * this.mapGrid.length);
+            randomR = Phaser.Math.Between(0, this.mapDatas.length-1);// Math.floor(Math.random() * this.mapGrid.length);
+            randomQ =Phaser.Math.Between(0, this.mapDatas[0].length-1 );//  Math.floor(Math.random() * this.mapGrid[0].length);
             _playerTile = this.mapDatas[randomR][randomQ];
-            if(_playerTile.id == TERRAIN_TYPES.GRASS.id || _playerTile.id == TERRAIN_TYPES.REDWOOD.id){
-                break;
+            //console.log(_playerTile.r,_playerTile.q);
+            if(_playerTile !=null){
+
+                if( tileTag.includes(_playerTile.tag)   ){ //|| _playerTile.tag === 'redwood'
+                    
+                    break;
+                }
             }
             
          }
@@ -269,33 +277,20 @@ export default class metaMap extends Phaser.Scene {
     }
     generateVil(num = 1){
         for(let n =0;n<num ; n++){
-            const vilPoint = this.randomStartingPoint();
+            const vilPoint = this.randomStartingPoint(['vil']);
             const array = this.hexTileRadious(vilPoint.r, vilPoint.q);
+            console.log(array);
             for(let i = 0; i <array.length ; i++){
-                if(Math.random()<0.7){
-                    
-                    array[i].id  = Number( TERRAIN_TYPES.VIL.id );
-                    array[i].type = {...  TERRAIN_TYPES.VIL};
-                    array[i].name = array[i].type.name
-                    array[i].rad = Phaser.Math.Between(2,6);
-                    let facilityList =[]
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));
-                    if(Math.random()< 0.5)  facilityList.push( createFacilityData('carScrap'));
-                    
-                    if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
-                    array[i].facility = facilityList;
+                if(Math.random()<0.55){
+                   const q = array[i].q;
+                   const r = array[i].r;
+                   //console.log(this.mapDatas[r][q]);
+                   this.mapDatas[r][q] = createTileData('vil',r,q);
                 }
             }
         }
     }
-    objectCopy( object ){
-        // 방법 A: 전개 연산자 (...) 사용
-        //array.push({ ...Facility.GasTank });
-        // 방법 B: Object.assign() 사용
-        return Object.assign({}, object);
-    }
+
     /**
      * 자원 총합 계산 및 
      */
@@ -348,8 +343,7 @@ export default class metaMap extends Phaser.Scene {
                 
                 
                 // 지형 객체 매핑
-                const terrainId = mapdatas[r][q].id;
-                const terrainType = mapdatas[r][q].type;
+                const terrainType = mapdatas[r][q];
                 const team = mapdatas[r][q].team;
                 
                 // 화면 위치 계산
@@ -365,7 +359,7 @@ export default class metaMap extends Phaser.Scene {
     }
     renderHexTile( r, q){
        // const terrainId = this.mapdatas[r][q].id;\
-        const terrainType = this.mapDatas[r][q].type;
+        const terrainType = this.mapDatas[r][q];
         const team = this.mapDatas[r][q].team;
         const pos = axialToPixel(q, r);
         const tileInstance = new HexTile(this, pos.x, pos.y, q, r, terrainType, team );

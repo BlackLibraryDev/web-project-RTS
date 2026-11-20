@@ -898,12 +898,12 @@ export default class UIScene extends Phaser.Scene {
         //디버그
         //console.log(tileData.res);
 
-        if(tileData.explored && tileData.name != 'empty'){
+        if(tileData.explored && tileData.tag != 'empty'){
 
-            if(items.tileImage)  items.tileImage.setTexture(`tile_${tileData.name}` ?? 'tile_fog');
+            if(items.tileImage)  items.tileImage.setTexture(`tile_${tileData.tag}` ?? 'tile_fog');
 
             items.titleText.setText( 
-                `${LanguageData.getText( tileData.name)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
+                `${LanguageData.getText( tileData.tag)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
             this.renderTileInfoList( tileData);
             
             let num = 0;

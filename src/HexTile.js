@@ -5,14 +5,14 @@ export const HEX_SIZE = 72; // 타일 반지름(px)
 
 // 지형 정의 (이동 비용, 색상 등)
 export const TERRAIN_TYPES = {
-    FOG: {id:-1, tag:'fog', name:'fog', slot:0, color:0x333333, moveCost:1, isWalkable: true},
-    EMPTY: { id: 0,tag:'empty', name: 'empty', slot:0, color: 0x000000, moveCost: 1 ,isWalkable: false},
-    WATER: { id: 1,tag:'water', name: 'water', slot:1, color: 0x3388cc, moveCost: 2 ,isWalkable: false},
-    REDWOOD: { id: 2,tag:'redwood', name: 'redwood', slot:7, color: 0xf3572c, moveCost: 2 ,isWalkable: true},
-    GRASS: { id: 3,tag: 'field', name: 'field', slot:8, color: 0x55aa55, moveCost: 1 ,isWalkable: true},
-    MOUNTAIN: { id: 4,tag:'mountain', name: 'mountain', slot:4,  color: 0x885522, moveCost: 5 ,isWalkable: true},
-    ROAD: { id: 12, tag:'load', name: '도로', slot:0, color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
-    VIL: { id: 11, tag:'vil',name: 'vil', slot:9, color: 0xcc3333, moveCost: 1,isWalkable: true }
+    FOG: {id:-1, tag:'fog',  slot:0, color:0x333333, moveCost:1, isWalkable: true},
+    EMPTY: { id: 0,tag:'empty',  slot:0, color: 0x000000, moveCost: 1 ,isWalkable: false},
+    WATER: { id: 1,tag:'water',  slot:1, color: 0x3388cc, moveCost: 2 ,isWalkable: false},
+    REDWOOD: { id: 2,tag:'redwood',  slot:7, color: 0xf3572c, moveCost: 2 ,isWalkable: true},
+    FIELD: { id: 3,tag: 'field', slot:8, color: 0x55aa55, moveCost: 1 ,isWalkable: true},
+    MOUNTAIN: { id: 4,tag:'mountain',  slot:4,  color: 0x885522, moveCost: 5 ,isWalkable: true},
+    ROAD: { id: 12, tag:'load', slot:0, color: 0xddccaa, moveCost: 0.5 ,isWalkable: true},
+    VIL: { id: 11, tag:'vil', slot:9, color: 0xcc3333, moveCost: 1,isWalkable: true }
 };
 
 
@@ -22,8 +22,8 @@ export class HexTile extends Phaser.GameObjects.Container {
 
         this.q = q; // Axial 좌표 Q (열)
         this.r = r; // Axial 좌표 R (행)
-        this.terrain = terrainType;
-        this.isExplored = false; // 탐험 여부 (Fog of War)
+        this.terrain ={... terrainType};
+        //this.isExplored = false; // 탐험 여부 (Fog of War)
 
         // 1. 육각형 배경 그래픽 생성
         this.teamGraphics = scene.add.graphics();
@@ -47,6 +47,7 @@ export class HexTile extends Phaser.GameObjects.Container {
         // 마우스 상호작용 이벤트
         this.on('pointerdown', () => {
             scene.events.emit('tileClicked', this);
+            //console.log( terrainType)
         });
 
         this.on('pointerover', () => {
@@ -79,7 +80,7 @@ export class HexTile extends Phaser.GameObjects.Container {
     drawHexagon(terrain, team=0 ) {
         // 1. 지형 데이터에 정의된 textureKey를 사용해 스프라이트 생성
         // 만약 키가 존재하지 않으면 기본 필드 텍스처로 폴백(Fallback) 처리
-        const textureToUse =`tile_${terrain.name}` ?? 'tile_field';
+        const textureToUse =`tile_${terrain.tag}` ?? 'tile_field';
         this.tileSprite = this.scene.add.sprite(0, 0, textureToUse);
         
         // 2. 스프라이트 크기를 헥스 규격에 맞게 조절 (높이 기준 스케일링)

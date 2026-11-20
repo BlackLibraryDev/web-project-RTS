@@ -1,3 +1,7 @@
+import { TERRAIN_TYPES } from "../HexTile.js";
+import { objectCopy} from "./calculateTurn.js";
+import { GameOptions } from "./option.js";
+
 // src/data.js
 export const GameData = {
     // 1. 구글 스프레드시트(TSV)에서 불러온 정적 설정 데이터 보관소
@@ -52,6 +56,22 @@ export const GameData = {
         this.saveData = {... resetData }
     }
 };
+
+export const res0 = {
+    house :0,
+    labor:0,
+    birth:0,
+    death:0,
+    ammo:0,
+    misc:0,
+    food:0,
+    fuel:0,
+    pop:[],
+    miscs:[],
+    foods:[],
+}
+
+
 export function addMenpower(num=1, array = null){
     const names = ['Kim' ,'John', 'Johan', 'Betty', 'Rose', 'Henderson', 'Park', 'Lee', 'Abdule', 'Franc'];
     const a = array ?? [];
@@ -119,7 +139,39 @@ export function parseTSVToMap(tsvText, keyField = 'tag') {
 
     return dataMap;
 }
+/**
+ * 
+ * @param {string} key - TERRAIN_TYPES.tag
+ * @returns 
+ */
+export function createTileData(key , r, q ){
+    const data = { ... Object.values(TERRAIN_TYPES).find(t => t.tag === key) || TERRAIN_TYPES.EMPTY };
+    
+    const facilityList = [];
 
+    data.res = objectCopy(res0);
+    data.res.foods = [];
+    data.res.foods =[];
+    data.res.miscs=[];
+    data.res.pop = [];
+
+    if(key=='vil'){
+        if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
+        if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
+        if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));
+        if(Math.random()< 0.5)  facilityList.push( createFacilityData('carScrap'));
+        
+        if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
+    }
+    data.facility = facilityList;
+    data.garrison = [];
+    data.rad = Phaser.Math.Between(2,5);
+    data.r = r;
+    data.q = q;
+    data.explored = GameOptions.config.debugMode;
+    data.team = 0;
+    return data;
+}   
 /**
  * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수
  * @param {string} facilityKey - 예: 'GasTank', 'JunkMine' 등
