@@ -255,9 +255,13 @@ export function createFacilityData(facilityKey, option={}) {
                 const max = Number(num[1]) ?? min; //max 8 ?? min
                 const per = num[2] ?? 1 // percentage% or 100%
                 _output.push( {tag:String(item[0]), min:min,max:max, percentage:per });
+            }else{
+
             }
         }
         data.output = _output;
+    }else{
+        data.output = [];
     }
 
     if(data.isWorkable){

@@ -279,7 +279,7 @@ export default class metaMap extends Phaser.Scene {
         for(let n =0;n<num ; n++){
             const vilPoint = this.randomStartingPoint(['vil']);
             const array = this.hexTileRadious(vilPoint.r, vilPoint.q);
-            console.log(array);
+           //console.log(array);
             for(let i = 0; i <array.length ; i++){
                 if(Math.random()<0.55){
                    const q = array[i].q;

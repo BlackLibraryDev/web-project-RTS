@@ -4,7 +4,7 @@ export const GameOptions = {
     config: {
         width: 1280,          // 가상 해상도 가로
         height: 720,          // 가상 해상도 세로
-        debugMode: true,     // 디버그 여부
+        debugMode: false,     // 디버그 여부
         bgmVolume: 0.7,       // 배경음악 볼륨 (0.0 ~ 1.0)
         sfxVolume: 1.0,        // 효과음 볼륨 (0.0 ~ 1.0)
         zoomRatio:{min:0.5,max:2.5, ratio:0.002}

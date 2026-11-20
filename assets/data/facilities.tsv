@@ -2,15 +2,15 @@ tag	type	resource	slot	isDemol	maxBuildTime	isBulid	isWorkable	output	labor	maxL
 redwood	resource	miscs	5	FALSE	0	FALSE	TRUE	wood:4-10,	0	10		1000	1000			
 water	resource	miscs	5	FALSE	0	FALSE	TRUE									
 junkMine	resource	miscs	2	TRUE	0	FALSE	TRUE	misc:5-10,can_tuna:1-1-0.3	0	10		500	500			
-well	storage	miscs	1	TRUE	0	TRUE	TRUE	water:1-2,	0	1		1000	-1			
-carScrap	resource	miscs	1	TRUE	0	FALSE	TRUE	scrapIron:3-6,	0	10		400	400			
+well	storage	miscs	1	TRUE	0	TRUE	TRUE	water:1-2,	0	1		1000	1000			
+carScrap	resource	miscs	1	TRUE	0	FALSE	TRUE	scrapIron:3-6,gasCan:1-2-0.4	0	10		400	400			
 gasStation	storage	gas	2	FALSE	0	FALSE	FALSE					500	500			
 apartment	house		3	FALSE	0	FALSE	FALSE				3	2	20			
 boardingHouse	house		2	TRUE	0	TRUE	FALSE				3	2	8	misc:120,wood:50;		
 baseCamp	house		1	TRUE	0	TRUE	FALSE				3	4	4	misc:80,		
 mouseFarm	farm	foods	1	TRUE	4	TRUE	TRUE	mouse:5-8,	0	2	4	100	100	misc:50,food:10,	food:10;	
 fishBay	farm	foods	1	TRUE	4	TRUE	TRUE	fish:4-6,	0	2	2	100	100	misc:80,food:10,	food:10;	
-yard	farm	foods	3	TRUE	40	TRUE	TRUE	wheet:8-12,	0	3	2	100	100			
+yard	farm	foods	3	TRUE	40	TRUE	TRUE	wheet:8-12,	0	3	2	500	500			
 huntingR	farm	foods	1	TRUE	0	TRUE	TRUE	venison:2-6,	0	1	2	0	5	misc:100,wood:200,		
 waterPump	facility	miscs	1	TRUE	0	TRUE	FALSE									
 radCleaner	facility	miscs	2	TRUE	10	TRUE	TRUE		0	2		0	10	misc:200,	watrer:10;misc:10;	
