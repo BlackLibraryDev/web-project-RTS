@@ -13,7 +13,7 @@ addFacility	시설 추가	Add facility
 addGarrisoin	주둔군 추가	Add Garrison
 labor	노동자	Labor
 fog	안개	Fog
-vil	폐허	Ruind
+vil	폐허 시가지	Ruind
 field	평지	Field
 redwood	붉은 숲	Red wood
 mountain	산	Mountain
@@ -32,4 +32,5 @@ txt_demolinfo	정말로 이 시설을 해체하시겠습니까?//자원의 절�
 txt_attack	지역 교전	Skirmish
 txt_attackinfo	지역을 확보하고 적의 잔당을 소탕합니다 	...
 attack_auto	자동전투	Auto
-attack_manual	수동전투(WIP)	Manual skirmish(WIP)
+attack_manual	수동전투	Manual skirmish
+carScrap	폐차량	car scrap

@@ -810,6 +810,7 @@ export default class UIScene extends Phaser.Scene {
             
         }
         if(tileData.garrison.length>=0){
+            return;
             items.garrisonContainer.setVisible(true);
             for(let i= 0; i<tileData.garrison.length ; i++){
 
@@ -1043,6 +1044,7 @@ export default class UIScene extends Phaser.Scene {
             const count = {fresh:0, perm:0}
            // console.log(res[1])
             for(let n =0 ; n < res1.length; n++){
+                console.log( `tile ${res1[n].tag} (${res1[n].r} , ${res1[n].q})` );
                 const tileRes = res1[n].res;
                 console.table(tileRes.foods)
                 for(let i = 0 ; i<tileRes.foods.length ;i++){
@@ -1061,6 +1063,7 @@ export default class UIScene extends Phaser.Scene {
             const res1 = res[1];
             const count = {misc:0}
              for(let n =0 ; n < res1.length; n++){
+                console.log( `tile ${res1[n].tag} (${res1[n].r} , ${res1[n].q})` );
                 const tileRes = res1[n].res;
                 console.table(tileRes.miscs)
                 for(let i = 0 ; i<tileRes.miscs.length ;i++){

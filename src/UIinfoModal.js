@@ -9,6 +9,7 @@ export function renderSubModal(scene, data){
     }
      const container = scene.add.container(scene.scale.width/2, scene.scale.height/2).setDepth(10);
      container.id = data.id;
+     container.rawdata = data;
     const fontStyle ={
         fontFamily:'Arial',
         fontSize: '24px',
@@ -72,6 +73,12 @@ export function renderSubModal(scene, data){
     // 4. 컨테이너가 파괴될 때 등록했던 모든 전역 이벤트 리스너 깔끔하게 제거
     container.once('destroy', () => {
         if(scene.subTileInfoContainer ==container) scene.subTileInfoContainer = null;
+         for(let i = 0 ; i< scene.subTileInfoContainerArray.length ; i++){
+            if(scene.subTileInfoContainerArray[i].id == container.id) {
+                scene.subTileInfoContainerArray.splice(i,1);
+                break;
+            }
+        }
         scene.input.off('pointermove', onPointerMove);
         scene.input.off('pointerup', onPointerUp);
         scene.input.off('pointerdown', onOutsidePointerDown);
@@ -93,7 +100,7 @@ export function renderSubModal(scene, data){
     const resourceTxt = scene.add.text(startX+10,startY+50, data.resource ,fontStyle).setOrigin(0).setFontSize(16);
     const bar = scene.add.graphics();
 
-    const pin = scene.add.text(startX + 280, startY+10, '📌',fontStyle ).setOrigin(1,0).setInteractive({ useHandCursor: true });;
+    const pin = scene.add.text(startX + 295, startY+10, '📌',fontStyle ).setOrigin(1,0).setInteractive({ useHandCursor: true });;
     pin.on('pointerdown', () => {
         if(isPinned){
             //고정해제
@@ -107,7 +114,6 @@ export function renderSubModal(scene, data){
             pin.setText('📌');
         }else{
             //고정
-            console.log(data.id)
             scene.subTileInfoContainer = null
             for(let i = 0 ; i< scene.subTileInfoContainerArray.length ; i++){
                 if(scene.subTileInfoContainerArray[i].id == container.id) {
@@ -134,13 +140,16 @@ export function renderSubModal(scene, data){
         pin:pin
 
     }
-    switch(data.type){
-        case 'house':
-            renderSubModal_house(scene, container, data);
-            //renderSubModalBar(scene, container,data);
-            break;
-        
+    if(data.status ==''){
+        switch(data.type){
+            case 'house':
+                 renderSubModal_house(scene, container, data);
+                //renderSubModalBar(scene, container,data);
+                break;
+            
+        }
     }
+    
     if(data.add!=null){
         renderSubModal_add(scene,container, data);
     }
@@ -175,12 +184,27 @@ function renderSubModal_workable(scene, container, data){
         if(data.status =='building'){
             items.infoText.setText(`status: ${data.status}`);
         }else{
+            //건설완료
+            if(data.type=='house'){
+                
+                renderSubModal(scene,data);
+                container.destroy();
+                return;
+            }
+            //건설완료 조건문 끝
+
             items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n`);
             if(data.output!=null){
-                const xp = data.labor>0 ? data.labor : 1;
+                const xp = data.amount>0 ? (data.labor>0 ? data.labor : 1) : 0;
                 for(let i =0 ; i<data.output.length;i++){
                     const item = data.output[i];
-                    items.infoText.text += `+ ${item.tag}: +${item.min *xp}~${item.max*xp}\n`;
+                    const per = item.percentage<1 ? `(${Math.floor( item.percentage*100)}%)` : '';
+                    if(item.min < item.max){
+                        items.infoText.text += `+ ${item.tag}: +${item.min *xp}~${item.max*xp} ${per}\n`;
+                    }else{
+                        items.infoText.text += `+ ${item.tag}: +${item.max*xp} ${per}\n`;
+                    }
+                    
                 }
             }
             
@@ -206,7 +230,8 @@ function renderSubModal_workable(scene, container, data){
                 container.func();
                 scene.forceUpdateTileInfo();
                 scene.renderResourceBar();
-                    
+
+                const cont = findSameIDcontainer(scene, container.id).func();;
             }
         }
     });
@@ -219,6 +244,8 @@ function renderSubModal_workable(scene, container, data){
                 container.func();
                 scene.forceUpdateTileInfo();
                 scene.renderResourceBar();
+
+                const cont = findSameIDcontainer(scene, container.id).func();
                 
             }
         }
@@ -250,7 +277,7 @@ function renderSubModal_add(scene, container, data){
 
         default:
             addList.push(
-                createFacilityData('baseCamp', {amount:0, pop:[]}),
+                createFacilityData('baseCamp', {amount:0, pop:[],status:'building',isWorkable:true}),
                 createFacilityData('mouseFarm',{status:'building'}),
                 createFacilityData('yard',{status:'building'}), 
                 createFacilityData('radCleaner',{status:'building'})
@@ -301,19 +328,24 @@ function renderSubModal_house(scene, container, data){
     items.resourceText.setVisible(true);
 
     const calculate = ()=>{
-        items.titleText.setText( `${LanguageData.getText(data.tag)} (${data.pop.length}/${data.maxAmount})`)
-        items.resourceText.setText( `house upkeep: +${data.amount}`);
+        if(data.status =='building'){
+            items.infoText.setText(`status: ${data.status}`);
+        }else{
+            items.titleText.setText( `${LanguageData.getText(data.tag)} (${data.pop.length}/${data.maxAmount})`)
+            items.resourceText.setText( `house upkeep: +${data.amount}`);
 
-        items.infoText.setText(`${LanguageData.getText('houseMember')}: ${data.pop.length}\n`);
-        for(let n =0 ;n< data.pop.length; n++){
-            const person = data.pop[n];
-            items.infoText.text += `* ${person.tag}(${person.age})  | hungry: ${person.hunger} \n`
+            items.infoText.setText(`${LanguageData.getText('houseMember')}: ${data.pop.length}\n`);
+            for(let n =0 ;n< data.pop.length; n++){
+                const person = data.pop[n];
+                items.infoText.text += `* ${person.tag}(${person.age})  | hungry: ${person.hunger} \n`
+            }
         }
     }
     
 
     container.func =()=>{
         //console.log('func()');
+        
         renderSubModalBar(scene, container,data);
         calculate();
     } 
@@ -360,4 +392,11 @@ function renderPercentageBar(scene, bar, data, startX, startY, width, height=10)
         bar.fillRect(startX, startY, width * percentage, height);
     }
     return {bar:bar, amount:amount, maxAmount:maxAmount, percentage:percentage};
+}
+function findSameIDcontainer(scene, id){
+    for(let i = 0 ; i< scene.subTileInfoContainerArray.length ; i++){
+        if(scene.subTileInfoContainerArray[i].id == id) {
+            return scene.subTileInfoContainerArray[i];
+        }
+    }
 }

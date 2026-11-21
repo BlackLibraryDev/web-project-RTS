@@ -163,6 +163,21 @@ export function createTileData(key , r, q ){
         
         if(Math.random()< 0.9)  facilityList.push( createFacilityData( 'junkMine'));
     }
+    if(key=='field'){
+        if(Math.random()< 0.23)  facilityList.push( createFacilityData('carScrap'));
+        if(Math.random()< 0.4)  facilityList.push( createFacilityData('redwood' ,{maxAmount:100} ) );
+        
+        
+    }
+
+    if(key=='redwood' || key=='mountain'){
+        facilityList.push( createFacilityData( 'redwood') );
+
+    }
+    if(key=='water'){
+        facilityList.push( createFacilityData( 'water') );
+    }
+
     data.facility = facilityList;
     data.garrison = [];
     data.rad = Phaser.Math.Between(2,5);
@@ -217,10 +232,7 @@ export function createFacilityData(facilityKey, option={}) {
             //console.log(data.pop);
         }
     }
-    if(data.type=='resource'){
-        //광산 자원 랜덤값
-        data.amount = Phaser.Math.Between( 0, data.maxAmount);
-    }
+    
     if(data.type=='farm'){
         data.turnEnd = ()=>{
            // console.log(`farm ${data.tag} : ` );
@@ -277,6 +289,11 @@ export function createFacilityData(facilityKey, option={}) {
         data[item] = option[item];
     });
 
+
+    if(data.type=='resource'){
+        //광산 자원 랜덤값
+        data.amount = Phaser.Math.Between( 0, data.maxAmount);
+    }
 
     return data
 }

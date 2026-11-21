@@ -277,6 +277,9 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         if(facil.buildTime >= facil.maxBuildTime){
                             facil.status = '';
                             facil.amount = facil.maxAmount
+                            if(facil.type=='house'){
+                                facil.isWorkable=false;
+                            }
                         }
                     }
                     if(facil.status=='demolition'){
