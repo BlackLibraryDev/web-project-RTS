@@ -3,6 +3,7 @@ import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
 import { GameData, createFacilityData } from './core/data.js';
 import { calculateResourceData, objectCopy, returnMapData } from './core/calculateTurn.js';
+import { renderSubModal } from './UIinfoModal.js';
 
 export const zoomRato = {ratio:0.001, min:0.5, max:2.5};
 
@@ -27,6 +28,7 @@ export default class UIScene extends Phaser.Scene {
         this.make_subTileInfo();
         this.make_tileDecisionInfo(LanguageData.getText('txt_welcome'), LanguageData.getText( 'txt_welcomeInfo'));
 
+        this.subTileInfoContainerArray= [];
         //ConfirmModal( this, 0,0, LanguageData.getText( 'txt_welcomeInfo'))
         
         //this.registry.events.emit(GameEvents.TURN_END, false);
@@ -143,58 +145,7 @@ export default class UIScene extends Phaser.Scene {
     }
     //미사용... 
     makeSubTileInfo(titleText, resourceText, _btUp = null, _btDown= null, _btDel= null){
-        const container = this.add.container(this.scale.width/2, this.scale.height/2).setDepth(10);
-        const fontStyle ={
-            fontFamily:'Arial',
-            fontSize: '24px',
-            fill: '#ffffff',
-            padding:{ x: 2, y: 2 }
-        } 
-
-        const startX = 340-this.scale.width/2;
-        const startY = 150-this.scale.height/2;
-        const menuBg = this.add.rectangle(startX,startY,300,400,0x000000,0.7).setStrokeStyle(2,0xffffff)
-        .setInteractive().setOrigin(0); // 뒤쪽 인게임 클릭 차단;
-        menuBg.on('pointerdown', () => {
-            //container.destroy();
-        });
-        // 어두운 반투명 배경 레이어 (화면 전체 덮기)
-        const overlay = this.add.rectangle(320, 0, this.scale.width, this.scale.height, 0x000000, 0.1)
-        .setInteractive({ useHandCursor: true });
-        overlay.on('pointerdown', () => {
-            container.destroy();
-            
-        }); 
-        const titleTxt = this.add.text(startX+10,startY+10, titleText ,fontStyle).setOrigin(0);
-        
-        const resourceTxt = this.add.text(startX+10,startY+50, resourceText ,fontStyle).setOrigin(0).setFontSize(16);
-        const bar = this.add.graphics();
-        
-        const btDel = this.makeButton(startX+150, startY+360, 240,50, LanguageData.getText('demolition'));
-        const btUp = this.makeButton(startX+270,startY +110, 40,40, '+');
-        const btDown = this.makeButton(startX +30,startY +110, 40,40, '-');
-        const laborTxt = this.add.text(startX+150, startY +110 , ``, {
-            fontFamily:'Arial',
-            fontSize: '24px',
-            fill: '#ffffff',
-            align:'center',
-            padding:{ x: 2, y: 2 }
-        } ).setOrigin(0.5);
-
-        if(_btDel==null) btDel.setVisible(false);
-        if(_btUp==null) btUp.setVisible(false);
-        if(_btDel==null) btDown.setVisible(false);
-        btDel.on('pointerdown', ()=>{
-            if(_btDel!=null) _btDel();
-        })
-        btUp.on('pointerdown', ()=>{
-            if(_btUp!=null) _btUp();
-        })
-        btDown.on('pointerdown', ()=>{
-            if(_btUp!=null) _btDown();
-        })
-        container.add( [ overlay, menuBg, titleTxt, resourceTxt, bar , btDel, btUp, btDown, laborTxt]);
-        return container;
+       
     }
 
     make_subTileInfo(){
@@ -260,6 +211,15 @@ export default class UIScene extends Phaser.Scene {
 
     }
     renderSubTileInfo(data, isVisible=false){
+        if(isVisible){
+             renderSubModal( this, data);
+        }else{
+            if(this.subTileInfoContainer) {
+                this.subTileInfoContainer.destroy();
+                this.subTileInfoContainer=null;
+            }         
+        }
+        return;
         this.subTileInfoContainer.setVisible(isVisible);
         if(isVisible){
             const items = this.subTileInfoContainer.items;
@@ -1259,8 +1219,14 @@ export default class UIScene extends Phaser.Scene {
         this.registry.events.emit(GameEvents.TURN_END, true);
         this.calculateData();
         this.forceUpdateTileInfo();
-        this.renderSubTileInfo(null,false);
+        //this.renderSubTileInfo(null,false);
         this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
+        if(this.subTileInfoContainer!=null){
+            if(this.subTileInfoContainer.func!=null) this.subTileInfoContainer.func();
+        }
+        for(let i = 0 ; i<this.subTileInfoContainerArray.length ; i++){
+            if(this.subTileInfoContainerArray[i].func !=null) this.subTileInfoContainerArray[i].func();
+        }
     }
     makeButton(x,y, width,height, text, options={}){
         const container = this.add.container(x,y).setInteractive({ 

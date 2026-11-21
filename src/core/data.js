@@ -186,6 +186,9 @@ export function createFacilityData(facilityKey, option={}) {
     }
     //특정 랜덤값 계산
     const data = { ...template };
+    //uuid = Phaser.Math.RND.uuid();
+    data.id = 'facility_' + Math.random().toString(36).substring(2, 10);
+    //console.log(data.id)
 
     data.buildTime = 0;
     if(data.status =='building'){
