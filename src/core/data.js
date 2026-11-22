@@ -79,6 +79,7 @@ export function addMenpower(num=1, array = null){
         a.push( { tag: names[Phaser.Math.Between(0,names.length-1)] ,
                  type:Phaser.Math.Between(1,2), 
                  hunger: Phaser.Math.Between(2,4), 
+                 thirst:4,
                  age:Phaser.Math.Between(18,36),
                  work:''
             } );
@@ -149,6 +150,11 @@ export function createTileData(key , r, q ){
     
     const facilityList = [];
 
+    data.rad = Phaser.Math.Between(2,5);
+    data.r = r;
+    data.q = q;
+    data.explored = GameOptions.config.debugMode;
+    data.team = 0;
     data.res = objectCopy(res0);
     data.res.foods = [];
     data.res.foods =[];
@@ -165,7 +171,7 @@ export function createTileData(key , r, q ){
     }
     if(key=='field'){
         if(Math.random()< 0.23)  facilityList.push( createFacilityData('carScrap'));
-        if(Math.random()< 0.4)  facilityList.push( createFacilityData('redwood' ,{maxAmount:100} ) );
+        if(Math.random()< 0.4)  facilityList.push( createFacilityData('redwood' ,{ maxAmount:100} ) );
         
         
     }
@@ -175,16 +181,12 @@ export function createTileData(key , r, q ){
 
     }
     if(key=='water'){
-        facilityList.push( createFacilityData( 'water') );
+        facilityList.push( createFacilityData( 'water',{rad:data.rad}) );
     }
 
     data.facility = facilityList;
     data.garrison = [];
-    data.rad = Phaser.Math.Between(2,5);
-    data.r = r;
-    data.q = q;
-    data.explored = GameOptions.config.debugMode;
-    data.team = 0;
+    
     return data;
 }   
 /**
@@ -240,11 +242,18 @@ export function createFacilityData(facilityKey, option={}) {
         }
     }
     if(data.type=='facility'){
-
-        data.turnEnd = ()=>{
-             console.log(`facility ${data.tag} : ` );
-             return data;
+        switch( data.tag){
+            case 'radCleaner':
+                
+            break;
+            default:
+                data.turnEnd = ()=>{
+                    console.log(`facility ${data.tag} : ` );
+                    return data;
+                }
+            break;
         }
+        
     }
     if(data.cost!=null){
         const cost = data.cost.split(',');

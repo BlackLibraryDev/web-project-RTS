@@ -596,7 +596,7 @@ export default class UIScene extends Phaser.Scene {
         const bgcolor = data.team? ( data.team >1 ? 0xff4f4f :  0x2cb9ff  ) : ( 0x000000 ); 
         const bg = this.add.rectangle(0,0, width,height, (bgColor!=null? bgColor :bgcolor) , 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         
-        let num = ''
+        let num = '';
         if(data.isWorkable ) num = `(${data.labor}/${data.maxLabor})`;
         if(data.type == 'house') num = `(${data.amount}/${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 

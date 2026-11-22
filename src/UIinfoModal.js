@@ -85,7 +85,6 @@ export function renderSubModal(scene, data){
     });
     
 
-
     // 어두운 반투명 배경 레이어 (화면 전체 덮기)
     /*
     const overlay = scene.add.rectangle(320, 0, scene.scale.width, scene.scale.height, 0x000000, 0)
@@ -147,6 +146,9 @@ export function renderSubModal(scene, data){
                 //renderSubModalBar(scene, container,data);
                 break;
             
+            case 'facility':
+                renderSubModal_facility(scene, container,data);
+                break;
         }
     }
     
@@ -157,11 +159,20 @@ export function renderSubModal(scene, data){
         renderSubModal_workable(scene, container, data );
         renderSubModalBar(scene, container,data);
     }
-     
+    
 
     scene.subTileInfoContainer = container;
     return container;
 }
+
+function renderSubModal_facility(scene, container, data){
+    //시설 관리
+    const items = container.items;
+    const btMake = scene.makeButton(items.startX+150, items.startY+320, 260,80, LanguageData.getText('schedule'),{color:0x2cb9ff});
+    container.add(btMake);
+}
+
+
 function renderSubModal_workable(scene, container, data){
     const items = container.items;
     
@@ -192,17 +203,17 @@ function renderSubModal_workable(scene, container, data){
                 return;
             }
             //건설완료 조건문 끝
-
-            items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n`);
+            
+            items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n   (Rad debuff: -${data.radDebuf*100}%)\n`);
             if(data.output!=null){
-                const xp = data.amount>0 ? (data.labor>0 ? data.labor : 1) : 0;
+                const xp =( data.amount>0 ? (data.labor>0 ? data.labor : 1) : 0 ) * (data.radDebuf ?? 1);
                 for(let i =0 ; i<data.output.length;i++){
                     const item = data.output[i];
                     const per = item.percentage<1 ? `(${Math.floor( item.percentage*100)}%)` : '';
                     if(item.min < item.max){
-                        items.infoText.text += `+ ${item.tag}: +${item.min *xp}~${item.max*xp} ${per}\n`;
+                        items.infoText.text += `+ ${item.tag}: +${Math.ceil(item.min *xp)}~${Math.ceil(item.max*xp)} ${per}\n`;
                     }else{
-                        items.infoText.text += `+ ${item.tag}: +${item.max*xp} ${per}\n`;
+                        items.infoText.text += `+ ${item.tag}: +${Math.ceil(item.max*xp)} ${per}\n`;
                     }
                     
                 }
@@ -231,7 +242,7 @@ function renderSubModal_workable(scene, container, data){
                 scene.forceUpdateTileInfo();
                 scene.renderResourceBar();
 
-                const cont = findSameIDcontainer(scene, container.id).func();;
+                const cont = findSameIDcontainer(scene, container.id)?.func();;
             }
         }
     });
@@ -245,7 +256,7 @@ function renderSubModal_workable(scene, container, data){
                 scene.forceUpdateTileInfo();
                 scene.renderResourceBar();
 
-                const cont = findSameIDcontainer(scene, container.id).func();
+                const cont = findSameIDcontainer(scene, container.id)?.func();
                 
             }
         }

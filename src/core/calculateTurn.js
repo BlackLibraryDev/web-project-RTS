@@ -88,6 +88,8 @@ export function calculateResourceData(scene, isTurnEnd=false){
             tileRes.pop = [];
             for(let i = 0; i < facility.length ; i++){
                 const facil = facility[i];
+                
+                facil.radDebuf = (10-mapdata.rad)/10;
 
                 if(facil.type=='house'){
                     //집 계산
@@ -238,12 +240,22 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                     //console.log(d)
                                     if(facil.amount>0){
                                         if(Math.random() <= d.percentage){
-                                            const item = getItem(d.tag, Phaser.Math.Between(d.min, d.max ));
+                                            const radDebuf = facil.radDebuf ?? 1;
+                                            let num0 = Phaser.Math.Between(d.min, d.max );
+                                            facil.amount -= num0;
+                                            if(facil.amount<0){
+                                                num0+= facil.amount;
+                                                facil.amount = 0;
+                                            }
+
+                                            const num = Math.ceil(num0*radDebuf);
+                                            const item = getItem(d.tag, num);
                                            // pushItems(res[team][item.type], item  );
                                             pushItems(delta[team][item.type], item );
                                             //각 타일에 아이템 넣기...
                                            pushItems( tileRes[item.type], item );
-                                            facil.amount -= item.num;
+                                            
+                                            
                                         }
                                     }else{
                                         
@@ -253,24 +265,34 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                 }
                             }
                             
-                        }else {
+                        } 
+                        else{
                             if(facil.type=='farm'){
                                 facil.buildTime = 0;
                                 facil.status = 'building';
                             }
+                            
                             if(facil.status =='building'){
 
                             }else{
                                 facil.amount =0;
                                 facil.maxLabor = 0;
                             }
-                            
-                            
                         }
+                        /*
+                        if(facil.type=='facility'){
+                           // console.log(mapdata)
+                            switch(facil.tag){
+                                case 'radCleaner':
+                                    
+                                break;
+                                default:
+                                    
+                                break;
+                            }
+                        } */
                     }
-                        
-                        
-                    
+
                     
                     if(facil.status=='building'){
                         facil.buildTime += facil.labor;
@@ -282,6 +304,26 @@ export function calculateResourceData(scene, isTurnEnd=false){
                             }
                         }
                     }
+
+                    //시설 파괴
+                    
+                    if(facil.status =='' && facil.amount<=0){
+
+                        if(facil.type =='resource'){
+                            facil.status = 'demolition';
+                            //자원 소진 시 삭제하기
+                        }
+
+                        if(facil.tag == 'radCleaner'){
+                            if(mapdata.rad >2){
+                                mapdata.rad--;
+                                facil.status = 'demolition';
+                            }
+                        }
+                        
+                        
+                    }
+
                     if(facil.status=='demolition'){
                         facil.amount -= facil.labor;
                         if(facil.amount <=0){
@@ -291,6 +333,8 @@ export function calculateResourceData(scene, isTurnEnd=false){
                             i--;
                         }
                     }
+
+                    
                 }
                 
             }
