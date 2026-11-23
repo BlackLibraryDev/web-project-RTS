@@ -167,10 +167,77 @@ export function renderSubModal(scene, data){
 
 function renderSubModal_facility(scene, container, data){
     //시설 관리
+     const fontStyle ={
+        fontFamily:'Arial',
+        fontSize: '24px',
+        fill: '#ffffff',
+        padding:{ x: 2, y: 2 }
+    } 
+
     const items = container.items;
     const btMake = scene.makeButton(items.startX+150, items.startY+320, 260,80, LanguageData.getText('schedule'),{color:0x2cb9ff});
-    container.add(btMake);
+    let bar = scene.add.graphics();
+
+     const func = ()=>{
+        //console.log(data.work)
+        const txt = data.work!=null? data.work.tag :  'schedule';
+        const color = data.work!=null? 0x000000 : 0x2cb9ff;
+        btMake.nameText.setText( LanguageData.getText( txt ));
+        btMake.bg.setFillStyle( color );
+        if(data.work){
+            const barData = renderPercentageBar(scene, bar, data.work, items.startX+20, items.startY+350, 260, 10);
+            bar = barData.bar;
+            container.add(bar);
+        }else{
+            bar.clear();
+        }
+        
+    }
+
+
+    btMake.on('pointerdown', ()=>{
+        const container2 =scene.add.container(0,0).setDepth(10);
+
+        const overlay = scene.add.rectangle(scene.scale.width/2, scene.scale.height/2, scene.scale.width, scene.scale.height, 0x000000, 0.5)
+        .setInteractive({ useHandCursor: true });
+        overlay.on('pointerdown', () => {
+            container2.destroy();
+        }); 
+        const menuBg = scene.add.rectangle(scene.scale.width/2-150,scene.scale.height/2-300,300,600,0x000000,0.7).setStrokeStyle(2,0xffffff)
+         .setOrigin(0); // 뒤쪽 인게임 클릭 차단;
+
+        container2.add([overlay, menuBg]);
+
+         const array = [{tag:'name', amount:1, maxAmount:10}, {tag:'forige', amount:3, maxAmount:10}];
+        for(let i =0 ; i< array.length ; i++){
+            const work = array[i];
+            const workContainer = scene.add.container(0,0).setDepth(11);
+            const bg = scene.add.rectangle(menuBg.x+10, menuBg.y+10 , 280, 70,0x000000,0.8).setStrokeStyle(2,0xffffff)
+             .setInteractive({ useHandCursor: true }).setOrigin(0); 
+            bg.on('pointerdown', ()=>{
+                data.work = {... work};
+                func();
+                container2.destroy();
+            })
+            const titleTxt = scene.add.text(menuBg.x+15, menuBg.y+15, LanguageData.getText(work.tag) ,fontStyle).setOrigin(0);
+            workContainer.add([bg,titleTxt]);
+
+            workContainer.y = i*80+10
+            container2.add(workContainer);
+        }
+
+        
+    })
+    const originFunc1 = container.func; // 무한 루프 방지를 위해 원본 저장
+    container.func = (...args) =>{
+        if(originFunc1) originFunc1(...args);
+        func(...args);
+    }
+    
+    container.add([btMake]);
+    func();
 }
+
 
 
 function renderSubModal_workable(scene, container, data){
@@ -225,11 +292,11 @@ function renderSubModal_workable(scene, container, data){
         
     }
 
-
-    container.func =()=>{
-        //console.log('func()');
+    const originFunc1 = container.func; // 무한 루프 방지를 위해 원본 저장
+    container.func = (...args) =>{
+        if(originFunc1) originFunc1(...args);
         renderSubModalBar(scene, container,data);
-        calculate();
+        calculate(...args);
     } 
     container.func();
     btUp.on('pointerdown', () => {
@@ -355,8 +422,6 @@ function renderSubModal_house(scene, container, data){
     
 
     container.func =()=>{
-        //console.log('func()');
-        
         renderSubModalBar(scene, container,data);
         calculate();
     } 

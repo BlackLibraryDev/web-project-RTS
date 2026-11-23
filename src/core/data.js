@@ -244,7 +244,7 @@ export function createFacilityData(facilityKey, option={}) {
     if(data.type=='facility'){
         switch( data.tag){
             case 'radCleaner':
-                
+                data.work = {tag:'radCleaning',amount:1, maxAmount:10} ;
             break;
             default:
                 data.turnEnd = ()=>{

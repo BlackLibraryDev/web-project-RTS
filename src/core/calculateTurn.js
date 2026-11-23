@@ -239,24 +239,35 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                     const d = facil.output[f];
                                     //console.log(d)
                                     if(facil.amount>0){
-                                        if(Math.random() <= d.percentage){
-                                            const radDebuf = facil.radDebuf ?? 1;
-                                            let num0 = Phaser.Math.Between(d.min, d.max );
-                                            facil.amount -= num0;
-                                            if(facil.amount<0){
-                                                num0+= facil.amount;
-                                                facil.amount = 0;
-                                            }
+                                        if(facil.work ==null){
+                                            if(Math.random() <= d.percentage){
+                                                const radDebuf = facil.radDebuf ?? 1;
+                                                let num0 = Phaser.Math.Between(d.min, d.max );
+                                                facil.amount -= num0;
+                                                if(facil.amount<0){
+                                                    num0+= facil.amount;
+                                                    facil.amount = 0;
+                                                }
 
-                                            const num = Math.ceil(num0*radDebuf);
-                                            const item = getItem(d.tag, num);
-                                           // pushItems(res[team][item.type], item  );
-                                            pushItems(delta[team][item.type], item );
-                                            //각 타일에 아이템 넣기...
-                                           pushItems( tileRes[item.type], item );
-                                            
-                                            
+                                                const num = Math.ceil(num0*radDebuf);
+                                                const item = getItem(d.tag, num);
+                                            // pushItems(res[team][item.type], item  );
+                                                pushItems(delta[team][item.type], item );
+                                                //각 타일에 아이템 넣기...
+                                            pushItems( tileRes[item.type], item );
+                                                
+                                                
+                                            }
+                                        }else{
+                                            //작업리스트가 있는 경우
+                                            facil.work.amount++;
+                                            if(facil.work.amount> facil.work.maxAmount){
+                                                //
+                                                console.log(`work complete : ${facil.work.tag}`);
+                                                facil.work = null;
+                                            }
                                         }
+                                        
                                     }else{
                                         
                                     }
