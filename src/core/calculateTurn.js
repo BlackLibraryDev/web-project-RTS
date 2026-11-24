@@ -229,49 +229,73 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                 for(let i = 0; i < facility.length ; i++){
                     const facil = facility[i];
+
+                    const pushItem = (facil)=>{
+                       
+                        for(let f = 0 ; f < facil.output.length ; f++){
+                             const d = facil.output[f];
+                            if(Math.random() <= d.percentage){
+                                const radDebuf = facil.radDebuf ?? 1;
+                                let num0 = Phaser.Math.Between(d.min, d.max );
+                                facil.amount -= num0;
+                                if(facil.amount<0){
+                                    num0+= facil.amount;
+                                    facil.amount = 0;
+                                }
+
+                                const num = Math.ceil(num0*radDebuf);
+                                const item = getItem(d.tag, num);
+                            // pushItems(res[team][item.type], item  );
+                                pushItems(delta[team][item.type], item );
+                                //각 타일에 아이템 넣기...
+                                pushItems( tileRes[item.type], item );
+                                
+                                
+                            }
+                        }
+                    }
+
                     if(facil.status == ''){
+                        if(facil.work !=null && facil.labor>0){
+                            //작업리스트가 있는 경우
+                            const work = facil.work;
+                            work.amount++;
+                            if(work.amount>= work.maxAmount){
+                                //
+                                console.log(`work complete : ${work.tag}`);
+                                facil.output = [{tag:work.tag, min:work.min, max:work.max,percentage:1 } ];
+                                facil.amount= facil.maxAmount;
+
+                                //pushItem(facil); 
+
+                                if(work.repeat==0){
+                                    //작업종료
+                                    facil.work = null;
+                                }else{
+                                    work.amount = 0;
+                                    //-1은 무한반복, 
+                                    if(work.repeat>0) {
+                                        work.repeat--;
+                                    }
+                                    
+                                }
+                                
+                            }
+                        }
                         if(facil.amount>0 ){
                             //식량 추가
                             
                             for(let n = 0; n< facil.labor ; n++){
                                 //노동자 수 만큼 자원획득
-                                for(let f = 0 ; f < facil.output.length ; f++){
-                                    const d = facil.output[f];
-                                    //console.log(d)
-                                    if(facil.amount>0){
-                                        if(facil.work ==null){
-                                            if(Math.random() <= d.percentage){
-                                                const radDebuf = facil.radDebuf ?? 1;
-                                                let num0 = Phaser.Math.Between(d.min, d.max );
-                                                facil.amount -= num0;
-                                                if(facil.amount<0){
-                                                    num0+= facil.amount;
-                                                    facil.amount = 0;
-                                                }
+                                if(facil.amount>0){
+                                    if(facil.work ==null){
 
-                                                const num = Math.ceil(num0*radDebuf);
-                                                const item = getItem(d.tag, num);
-                                            // pushItems(res[team][item.type], item  );
-                                                pushItems(delta[team][item.type], item );
-                                                //각 타일에 아이템 넣기...
-                                            pushItems( tileRes[item.type], item );
-                                                
-                                                
-                                            }
-                                        }else{
-                                            //작업리스트가 있는 경우
-                                            facil.work.amount++;
-                                            if(facil.work.amount> facil.work.maxAmount){
-                                                //
-                                                console.log(`work complete : ${facil.work.tag}`);
-                                                facil.work = null;
-                                            }
-                                        }
-                                        
+                                        pushItem(facil);
                                     }else{
                                         
                                     }
                                     
+                                }else{
                                     
                                 }
                             }
@@ -280,14 +304,16 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         else{
                             if(facil.type=='farm'){
                                 facil.buildTime = 0;
-                                facil.status = 'building';
+                                facil.amount =1;
+                                facil.work = {... facil.workList.find(w => w.tag=== facil.output[0].tag) }
+                                //facil.status = 'building';
                             }
                             
                             if(facil.status =='building'){
 
                             }else{
-                                facil.amount =0;
-                                facil.maxLabor = 0;
+                                //facil.amount =0;
+                                //facil.maxLabor = 0;
                             }
                         }
                         /*

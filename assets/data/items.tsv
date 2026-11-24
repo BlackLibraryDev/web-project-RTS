@@ -6,11 +6,13 @@ gasCan	🛢️	miscs	gasolin
 plasticBottle	🫙	miscs	plastic	
 scrapIron		miscs	iron	
 rad	☢	miscs	trash	
-wheat		foods	meal	3
-corn	🌽	foods	meal	4
+wheat		foods	meal	10
+corn	🌽	foods	meal	5
 beef	🥩	foods	meat	2
+cabbage	🥬	foods	vegetable	5
 can_been	🥫	foods	can	120
 can_tuna	🥫	foods	can	120
 venison	🫎	foods	meat	2
 mouse	🐀	foods	meat	2
+rat	🐀	foods	meat	2
 fish	🐟	foods	fish	2

@@ -41,9 +41,24 @@ export default class UIScene extends Phaser.Scene {
         this.endTurnButton = this.makeButton( this.scale.width/2, this.scale.height-60,200,60,'EndTurn').setDepth(20);
         this.endTurnButton.on('pointerdown', () => {
             //턴 넘김
-             
+             this.turnRepeat();
+             return;
             this.turnEnd();
         }); 
+
+         // 반복 실행할 타이머 변수를 초기화합니다.
+        this.repeatTimer = null;
+
+        // 스페이스바를 누를 때마다 실행되는 이벤트
+        this.input.keyboard.on('keydown-SPACE', () => {
+            this.turnRepeat()
+        });
+        
+
+        // 방향키(위) 또는 W키를 눌렀을 때
+        this.input.keyboard.on('keydown-UP', () => { /* 위쪽 이동 */ });
+        this.input.keyboard.on('keydown-W', () => { /* 위쪽 이동 */ });
+        this.input.keyboard.on('keydown-ENTER', () => { /* 확인 */ });
         
         // --------------------------------------------------
         // 3. registry 이벤트 수신
@@ -61,7 +76,27 @@ export default class UIScene extends Phaser.Scene {
         });
         //color data.team >1 ? 0xff4f4f :  0x2cb9ff 
     }
-
+    turnRepeat(){
+        if (this.repeatTimer) {
+            // 1. 이미 타이머가 돌고 있다면 중단 및 초기화
+            this.repeatTimer.remove();
+            this.repeatTimer = null;
+            console.log('반복 중단');
+            this.endTurnButton.nameText.setText(`⏸ ${'EndTurn' }`);
+        } else {
+            // 2. 타이머가 없다면 0.3초(300ms)마다 반복 시작
+            console.log('반복 시작');
+            this.endTurnButton.nameText.setText(`▶ ${'EndTurn' }`);
+            // (선택) 누르자마자 즉시 1번 실행하고 싶다면 아래 줄 주석 해제
+            
+            this.repeatTimer = this.time.addEvent({
+                delay: 700,                // 
+                callback: this.turnEnd,   // 반복 실행할 함수
+                callbackScope: this,       // 함수 내부에서 this를 씬(Scene)으로 유지
+                loop: true                 // 무한 반복
+            });
+        }
+    }
 
     make_tileDecisionInfo(titleMessage, infoMessage, onConfirm =null , onConfirm2=null){
         const width = 400;
@@ -1254,4 +1289,6 @@ export default class UIScene extends Phaser.Scene {
         container.nameText = nameTxt;
         return container;
     }
+
+
 }

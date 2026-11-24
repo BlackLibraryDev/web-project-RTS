@@ -149,6 +149,10 @@ export function renderSubModal(scene, data){
             case 'facility':
                 renderSubModal_facility(scene, container,data);
                 break;
+
+            case 'farm':
+                renderSubModal_facility(scene, container,data);
+                break;
         }
     }
     
@@ -175,7 +179,7 @@ function renderSubModal_facility(scene, container, data){
     } 
 
     const items = container.items;
-    const btMake = scene.makeButton(items.startX+150, items.startY+320, 260,80, LanguageData.getText('schedule'),{color:0x2cb9ff});
+    const btMake = scene.makeButton(items.startX+150, items.startY+320, 260,80, ('schedule'),{color:0x2cb9ff});
     let bar = scene.add.graphics();
 
      const func = ()=>{
@@ -185,8 +189,8 @@ function renderSubModal_facility(scene, container, data){
         btMake.nameText.setText( LanguageData.getText( txt ));
         btMake.bg.setFillStyle( color );
         if(data.work){
-            const barData = renderPercentageBar(scene, bar, data.work, items.startX+20, items.startY+350, 260, 10);
-            bar = barData.bar;
+            bar.clear();
+            bar = renderPercentageBar(scene, data.work, items.startX+20, items.startY+350, 260, 10).bar;
             container.add(bar);
         }else{
             bar.clear();
@@ -196,19 +200,21 @@ function renderSubModal_facility(scene, container, data){
 
 
     btMake.on('pointerdown', ()=>{
-        const container2 =scene.add.container(0,0).setDepth(10);
+        const container2 =scene.add.container(0,0).setDepth(100);
+        const width =300;
+        const height = 500;
 
         const overlay = scene.add.rectangle(scene.scale.width/2, scene.scale.height/2, scene.scale.width, scene.scale.height, 0x000000, 0.5)
         .setInteractive({ useHandCursor: true });
         overlay.on('pointerdown', () => {
             container2.destroy();
         }); 
-        const menuBg = scene.add.rectangle(scene.scale.width/2-150,scene.scale.height/2-300,300,600,0x000000,0.7).setStrokeStyle(2,0xffffff)
+        const menuBg = scene.add.rectangle(scene.scale.width/2-width/2,scene.scale.height/2-height/2,width,height,0x000000,0.7).setStrokeStyle(2,0xffffff)
          .setOrigin(0); // 뒤쪽 인게임 클릭 차단;
 
         container2.add([overlay, menuBg]);
 
-         const array = [{tag:'name', amount:1, maxAmount:10}, {tag:'forige', amount:3, maxAmount:10}];
+         const array =  data.workList ?? [];
         for(let i =0 ; i< array.length ; i++){
             const work = array[i];
             const workContainer = scene.add.container(0,0).setDepth(11);
@@ -219,10 +225,13 @@ function renderSubModal_facility(scene, container, data){
                 func();
                 container2.destroy();
             })
-            const titleTxt = scene.add.text(menuBg.x+15, menuBg.y+15, LanguageData.getText(work.tag) ,fontStyle).setOrigin(0);
-            workContainer.add([bg,titleTxt]);
+            const titleTxt = scene.add.text(menuBg.x+15, menuBg.y+15, `${LanguageData.getText(work.tag)} (+${work.min}~${work.max})` ,fontStyle);
+            const infoTxt =  scene.add.text(menuBg.x+15, menuBg.y+45, `days:${work.maxAmount}, repeat: ${work.repeat<0? 'infinity': work.repeat }` ,fontStyle).setFontSize(16);
+           
+            
+            workContainer.add([bg,titleTxt,infoTxt]);
 
-            workContainer.y = i*80+10
+            workContainer.y = i*80+10;
             container2.add(workContainer);
         }
 
@@ -440,8 +449,8 @@ function renderSubModalBar(scene, container, data){
             tag = data.status;
         }
 
-        items.bar.setVisible(true);
-        const barData = renderPercentageBar(scene, items.bar, data, -290, items.startY+70, 280, 10);
+        items.bar.clear();
+        const barData = renderPercentageBar(scene, data, -290, items.startY+70, 280, 10);
         items.bar = barData.bar;
         container.add(items.bar);
         items.resourceText.setText( `${tag}: ${barData.amount}/${barData.maxAmount}(${ Math.ceil(barData.percentage*1000)/10 }%)`)
@@ -453,13 +462,12 @@ function renderSubModalBar(scene, container, data){
     return container;
 }
 
-function renderPercentageBar(scene, bar, data, startX, startY, width, height=10){
+function renderPercentageBar(scene,  data, startX, startY, width, height=10){
     const amount = data.status=='building'? data.buildTime : data.amount;
     const maxAmount= data.status=='building'? data.maxBuildTime : data.maxAmount;
 
-    const percentage = amount / maxAmount ?? 0 // 비율 계산 (0 ~ 1)    
-    bar.clear();        
-    bar = scene.add.graphics();
+    const percentage = amount / maxAmount ?? 0 // 비율 계산 (0 ~ 1)          
+    const bar = scene.add.graphics();
     bar.fillStyle(0x333333, 1); // 어두운 회색 배경
     bar.fillRect(startX, startY, width, height);
     // [잔여량 게이지 상자] 게이지가 차오르는 색상 (예: 녹색 0x00ff00)

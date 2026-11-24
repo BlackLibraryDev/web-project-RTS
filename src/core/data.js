@@ -234,17 +234,31 @@ export function createFacilityData(facilityKey, option={}) {
             //console.log(data.pop);
         }
     }
-    
+    /*
     if(data.type=='farm'){
         data.turnEnd = ()=>{
            // console.log(`farm ${data.tag} : ` );
             return data;
         }
-    }
-    if(data.type=='facility'){
+        
+    }*/
+    if(data.type=='facility' ||data.type=='farm' ){
         switch( data.tag){
             case 'radCleaner':
-                data.work = {tag:'radCleaning',amount:1, maxAmount:10} ;
+                data.workList =[{tag:'radCleaning',amount:0, maxAmount:10,min:1,max:1, repeat:-1}]  ;
+                data.work = {... data.workList[0]}
+            break;
+
+            case 'mouseFarm':
+                data.workList =[{tag:'mouse',amount:0, maxAmount:4, min:3,max:4, repeat:0},
+                                 {tag:'rat',amount:0, maxAmount:5, min:4,max:7, repeat:0}]  ;
+                data.work = {... data.workList[0]}
+            break;
+            case 'yard':
+                data.workList =[{tag:'wheat',amount:0, maxAmount:70, min:6,max:8, repeat:0}, 
+                                {tag:'corn',amount:0, maxAmount:55,min:4,max:7, repeat:0}, 
+                                {tag:'cabbage',amount:0, maxAmount:40,min:7,max:12, repeat:0}]  ;
+                data.work = {... data.workList[0]}
             break;
             default:
                 data.turnEnd = ()=>{
