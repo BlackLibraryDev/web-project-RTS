@@ -114,20 +114,20 @@ export default class metaMap extends Phaser.Scene {
         //특정 맵 데이터 좌표를 랜덤으로 고른 후 주변 밝히기
         this.startingPoint = this.randomStartingPoint(['vil', 'field', 'redwood']);
         this.hexTileFogVisible(this.startingPoint.r, this.startingPoint.q);
-        const playerTile = this.startingPoint.playerTile;
-        playerTile.team =1; 
-        if(Object.keys( playerTile.facility).find((key) => playerTile.facility[key].type === 'house')){
+        this.playerTile = this.startingPoint.playerTile;
+        this.playerTile.team =1; 
+        if(Object.keys( this.playerTile.facility).find((key) => this.playerTile.facility[key].type === 'house')){
             //console.log('집이 있음')
-            playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
+            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }else{
-            playerTile.facility.push( createFacilityData( 'baseCamp') );
-            playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
+            this.playerTile.facility.push( createFacilityData( 'baseCamp') );
+            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:'',amount:0}) );
         }
         
-        for(let i = 0; i<playerTile.garrison.length ; i++){
-            playerTile.garrison[i].team = 1;
+        for(let i = 0; i<this.playerTile.garrison.length ; i++){
+            this.playerTile.garrison[i].team = 1;
         }
-        playerTile.res.foods.push( getItem('mouse',10),getItem('rat',10))
+        this.playerTile.res.foods.push( getItem('mouse',10),getItem('rat',10))
         
         this.centerCameraOnTile(this.startingPoint.r, this.startingPoint.q);
         //uiScene.setTileInfo(this.mapDatas[this.startingPoint.r][this.startingPoint.q])

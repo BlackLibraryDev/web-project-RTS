@@ -157,7 +157,6 @@ export function createTileData(key , r, q ){
     data.team = 0;
     data.res = objectCopy(res0);
     data.res.foods = [];
-    data.res.foods =[];
     data.res.miscs=[];
     data.res.pop = [];
 
@@ -250,16 +249,51 @@ export function createFacilityData(facilityKey, option={}) {
             break;
 
             case 'mouseFarm':
-                data.workList =[{tag:'mouse',amount:0, maxAmount:4, min:3,max:4, repeat:0},
-                                 {tag:'rat',amount:0, maxAmount:5, min:4,max:7, repeat:0}]  ;
+                data.workList =[{tag:'mouse',amount:0, maxAmount:4, min:5,max:8, repeat:-1},
+                                 {tag:'rat',amount:0, maxAmount:5, min:6,max:10, repeat:-1}]  ;
                 data.work = {... data.workList[0]}
             break;
             case 'yard':
-                data.workList =[{tag:'wheat',amount:0, maxAmount:70, min:6,max:8, repeat:0}, 
-                                {tag:'corn',amount:0, maxAmount:55,min:4,max:7, repeat:0}, 
-                                {tag:'cabbage',amount:0, maxAmount:40,min:7,max:12, repeat:0}]  ;
+                data.workList =[{tag:'wheat',amount:0, maxAmount:70, min:6,max:8, repeat:-1}, 
+                                {tag:'corn',amount:0, maxAmount:55,min:4,max:7, repeat:-1}, 
+                                {tag:'cabbage',amount:0, maxAmount:40,min:7,max:12, repeat:-1}]  ;
                 data.work = {... data.workList[0]}
             break;
+
+            case 'bucher':
+                data.workList =[{tag:'jerky',amount:0, maxAmount:10,min:5,max:5, repeat:-1}]  ;
+                data.work = {... data.workList[0]}
+
+                
+                const consume_jerky = (tileRes)=>{
+                    const foods = tileRes.foods;
+                    const count = 5;
+                    const array = [];
+                    for(let i =0 ; i< foods.length ; i++){
+                        if(foods[i].subType =='meat' && foods[i].num>=count){
+                            const _item = {...foods[i]};
+                            _item.num = count;
+                            array.push( _item);
+
+                            foods[i].num-= count;
+                            if(foods[i].num==0){
+                                foods.splice(i,1);
+                                i--;
+                            }
+                            //재료소모 및 제작
+                            return array;
+                            
+                        }
+                    }
+                    return null;
+                }
+
+                data.work.consume ={
+                    jerky: consume_jerky,
+                }
+                
+            break;
+
             default:
                 data.turnEnd = ()=>{
                     console.log(`facility ${data.tag} : ` );

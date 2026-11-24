@@ -16,7 +16,7 @@ export default class UIScene extends Phaser.Scene {
         const gameScene = this.scene.get('GameScene');
         
 
-        this.turn = {year:2054 , week:1 };
+        this.turn = {year:2053 , day:1,  week:1 };
 
         // --------------------------------------------------
         // 2. 일시정지 팝업 메뉴 컨테이너 (초기에는 숨김)
@@ -758,6 +758,9 @@ export default class UIScene extends Phaser.Scene {
                         }
                         
                         tileData.team = 1;
+                        tileData.res = metaMap.playerTile.res;
+                        tileData.res.foods = metaMap.playerTile.res.foods;
+                         tileData.res.miscs = metaMap.playerTile.res.miscs;
                         GameData.saveData.fuel -= path.length;
                         metaMap.renderHexTile(tileData.r, tileData.q);
                         metaMap.hexTileFogVisible( tileData.r, tileData.q);
@@ -967,9 +970,9 @@ export default class UIScene extends Phaser.Scene {
 
         if(res !=null){
             if(turnEnd){
-                this.turn.week++;
-                if(this.turn.week>52) {
-                    this.turn.week =1;
+                this.turn.day++;
+                if(this.turn.day>365) {
+                    this.turn.day =1;
                     this.turn.year++
                 }
                 //console.log(data)
@@ -1010,7 +1013,7 @@ export default class UIScene extends Phaser.Scene {
             }
             
         }
-        ctn.turnText.setText( `Year ${this.turn.year}, week ${this.turn.week}`);
+        ctn.turnText.setText( `Year ${this.turn.year}, day ${this.turn.day}`);
     }
     make_resourceBar(){
         this.resourceContainer = this.add.container(0, 0).setDepth(2);

@@ -235,7 +235,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         for(let f = 0 ; f < facil.output.length ; f++){
                              const d = facil.output[f];
                             if(Math.random() <= d.percentage){
-                                const radDebuf = facil.radDebuf ?? 1;
+                                const radDebuf = d.min==d.max? 1 :  ( facil.radDebuf ?? 1);
                                 let num0 = Phaser.Math.Between(d.min, d.max );
                                 facil.amount -= num0;
                                 if(facil.amount<0){
@@ -254,68 +254,58 @@ export function calculateResourceData(scene, isTurnEnd=false){
                             }
                         }
                     }
-
-                    if(facil.status == ''){
+                    let laborToken = true;
+                    if(facil.status == '' && facil.amount==0){
                         if(facil.work !=null && facil.labor>0){
                             //작업리스트가 있는 경우
                             const work = facil.work;
-                            work.amount++;
-                            if(work.amount>= work.maxAmount){
-                                //
-                                console.log(`work complete : ${work.tag}`);
-                                facil.output = [{tag:work.tag, min:work.min, max:work.max,percentage:1 } ];
-                                facil.amount= facil.maxAmount;
-
-                                //pushItem(facil); 
-
-                                if(work.repeat==0){
-                                    //작업종료
-                                    facil.work = null;
-                                }else{
-                                    work.amount = 0;
-                                    //-1은 무한반복, 
-                                    if(work.repeat>0) {
-                                        work.repeat--;
-                                    }
-                                    
-                                }
+                            if(work.amount==0 && work.consume !=null){
+                                //재료소모가 있는 경우
+                                const array = work.consume[work.tag](tileRes);
+                                if(array !=null && array.length>0){
                                 
-                            }
-                        }
-                        if(facil.amount>0 ){
-                            //식량 추가
-                            
-                            for(let n = 0; n< facil.labor ; n++){
-                                //노동자 수 만큼 자원획득
-                                if(facil.amount>0){
-                                    if(facil.work ==null){
+                                    facil.output = [{tag:work.tag, min:array[0].num, max:array[0].num,percentage:1 } ]
+                                    facil.amount =0;
+                                    facil.maxAmount = array[0].num;
 
-                                        pushItem(facil);
+                                    work.amount++
+                                    laborToken=false;
+                                }
+
+                            }else{
+
+                                 if(work.amount>= work.maxAmount){
+                                    //
+                                    //console.log(`work complete : ${work.tag}`);
+                                    facil.output = [{tag:work.tag, min:work.min, max:work.max,percentage:1 } ];
+                                    facil.amount= facil.maxAmount;
+
+                                    //pushItem(facil); 
+
+                                    if(work.repeat==0){
+                                        //작업종료
+                                        facil.work = null;
                                     }else{
+                                        work.amount = 0;
+                                        //-1은 무한반복, 
+                                        if(work.repeat>0) {
+                                            work.repeat--;
+                                        }
                                         
                                     }
                                     
                                 }else{
-                                    
+                                    work.amount++;
+                                    laborToken=false;
                                 }
+                                
+                                
                             }
-                            
-                        } 
-                        else{
-                            if(facil.type=='farm'){
-                                facil.buildTime = 0;
-                                facil.amount =1;
-                                facil.work = {... facil.workList.find(w => w.tag=== facil.output[0].tag) }
-                                //facil.status = 'building';
-                            }
-                            
-                            if(facil.status =='building'){
 
-                            }else{
-                                //facil.amount =0;
-                                //facil.maxLabor = 0;
-                            }
+                            
+                           
                         }
+                        
                         /*
                         if(facil.type=='facility'){
                            // console.log(mapdata)
@@ -332,10 +322,11 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                     
                     if(facil.status=='building'){
+                        laborToken=false;
                         facil.buildTime += facil.labor;
                         if(facil.buildTime >= facil.maxBuildTime){
                             facil.status = '';
-                            facil.amount = facil.maxAmount
+                            facil.amount = 0;
                             if(facil.type=='house'){
                                 facil.isWorkable=false;
                             }
@@ -358,6 +349,27 @@ export function calculateResourceData(scene, isTurnEnd=false){
                             }
                         }
                         
+                        
+                    }
+
+
+                    if(laborToken ){
+                        //식량 추가
+                            
+                        for(let n = 0; n< facil.labor ; n++){
+                            //노동자 수 만큼 자원획득
+                            if(facil.amount>0){
+                                pushItem(facil);     
+                                if(facil.work ==null){
+                                                                    
+                                }else{
+                                        
+                                }
+                                
+                            }else{
+                                
+                            }
+                        }
                         
                     }
 

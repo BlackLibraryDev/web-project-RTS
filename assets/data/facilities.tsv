@@ -17,3 +17,4 @@ radCleaner	facility	miscs	2	TRUE	2	TRUE	TRUE	rad:1-1,	0	2		0	10	misc:200,	watrer
 smith	facility	miscs	1	TRUE	0	TRUE	TRUE				2					
 zoo	resource	foods	1	TRUE	0	FALSE	TRUE	meat:5-10,	0	1	2	0	10			
 smallFarm	farm	foods	1	TRUE	0	TRUE	TRUE		0	2	2	0	10			
+bucher	facility	foods	1	TRUE	0	TRUE	TRUE		0	1	2	0	100			

@@ -278,6 +278,7 @@ function renderSubModal_workable(scene, container, data){
                 container.destroy();
                 return;
             }
+            
             //건설완료 조건문 끝
             
             items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n   (Rad debuff: -${data.radDebuf*100}%)\n`);
@@ -289,7 +290,7 @@ function renderSubModal_workable(scene, container, data){
                     if(item.min < item.max){
                         items.infoText.text += `+ ${item.tag}: +${Math.ceil(item.min *xp)}~${Math.ceil(item.max*xp)} ${per}\n`;
                     }else{
-                        items.infoText.text += `+ ${item.tag}: +${Math.ceil(item.max*xp)} ${per}\n`;
+                        items.infoText.text += `+ ${item.tag}: +${Math.ceil(item.max)} ${per}\n`;
                     }
                     
                 }
@@ -367,7 +368,8 @@ function renderSubModal_add(scene, container, data){
                 createFacilityData('baseCamp', {amount:0, pop:[],status:'building',isWorkable:true}),
                 createFacilityData('mouseFarm',{status:'building'}),
                 createFacilityData('yard',{status:'building'}), 
-                createFacilityData('radCleaner',{status:'building'})
+                createFacilityData('radCleaner',{status:'building'}),
+                createFacilityData('bucher',{status:'building'})
             );
         break
     }
