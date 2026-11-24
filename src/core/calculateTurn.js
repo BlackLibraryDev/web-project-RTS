@@ -251,6 +251,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                 pushItems( tileRes[item.type], item );
                                 
                                 
+                                
                             }
                         }
                     }
