@@ -409,7 +409,7 @@ export default class UIScene extends Phaser.Scene {
 
 
         let bar = this.add.graphics();
-        const barData = this.renderPercentageBar(bar, data, 0,height-10, width, 10)
+        let barData = this.renderPercentageBar(bar, data.work??data, 0,height-10, width, 10)
         bar = barData.bar;
        
 
