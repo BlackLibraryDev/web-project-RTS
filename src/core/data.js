@@ -1,5 +1,6 @@
 import { TERRAIN_TYPES } from "../HexTile.js";
 import { objectCopy} from "./calculateTurn.js";
+import { createFacilityData } from "./facilities.js";
 import { GameOptions } from "./option.js";
 
 // src/data.js
@@ -51,7 +52,7 @@ export const GameData = {
             miscs:[],
             foodRestric:3,
             waterRestric:3,
-
+            storageID:'',
         }
         
        // returnMenpower( 7 , resetData.pop);
@@ -72,6 +73,297 @@ export const res0 = {
     pop:[],
     miscs:[],
     foods:[],
+}
+// 실제 세이브 파일(JSON)에 저장될 순수 데이터 객체
+export const storageData = {};
+
+// 창고 데이터 접근 및 조작 유틸리티
+export const resData = {
+    // 1. storageID가 없으면 기본 구조 생성 후 반환, 있으면 기존 객체 참조 반환
+    getRes(storageID) {
+        if (!storageID) return null;
+
+        if (!storageData[storageID]) {
+            storageData[storageID] = {
+                house :0,
+                labor:0,
+                birth:0,
+                death:0,
+                ammo:0,
+                misc:0,
+                food:0,
+                fuel:0,
+                pop:[],
+                miscs:[],
+                foods:[],
+            };
+        }
+        return storageData[storageID];
+    },
+    setRes(storageID, type, value) {
+        const target = this.getRes(storageID);
+        if (!target) return;
+
+        target[type] ??= 0;
+        target[type] += value;
+    },
+
+    // 2. 식량 추가 (앞서 만드신 freshDay 구분 pushItems 연동)
+    addFoods(storageID, item) {
+        const target = this.getRes(storageID);
+        if (target) {
+            pushItems(target.foods, item);
+        }
+    },
+
+    // 3. 일반 아이템/기타 자원 추가
+    addMiscs(storageID, item) {
+        const target = this.getRes(storageID);
+        if (target) {
+            pushItems(target.miscs, item);
+        }
+    },
+    addItems(storageID, item){
+        if(item.type=='foods'){
+            this.addFoods( storageID, item); 
+            return;
+        } 
+        if(item.type=='miscs') {
+            this.addMiscs(storageID, item);
+            return;
+        }
+        const target = this.getRes(storageID)[type];
+        if(target) target += item;
+
+    },
+
+    // 4. 특정 storageID의 전체 아이템 목록 조회
+    getItems(storageID) {
+        const target = this.getRes(storageID);
+        return {
+            foods: target.foods,
+            miscs: target.miscs
+        };
+    },
+    /**
+     * 요구 자원(costs)이 창고에 모두 충분히 있는지 검사합니다.
+     * @param {string} storageID - 대상 창고 ID
+     * @param {Object} costs - 예: { wood: 10, stone: 5 } 또는 { items: [{ tag: 'iron', num: 2 }] }
+     * @returns {boolean} 모든 자원이 충분하면 true, 하나라도 부족하면 false
+     */
+    hasRes(storageID, costs) {
+        if (!costs) return true;
+        const target = this.getRes(storageID);
+        if (!target) return false;
+
+        for (const [key, need] of Object.entries(costs)) {
+            // 1. 배열형 아이템 목록 검사 (예: costs.items = [{ tag: 'iron', num: 2 }])
+            if (key === 'items' && Array.isArray(need)) {
+                for (const reqItem of need) {
+                    const reqNum = Number(reqItem.num) || 0;
+                    if (reqNum <= 0) continue;
+
+                    // foods와 miscs 배열에서 해당 tag의 총합 계산 (freshDay가 나뉘어 있을 수 있으므로 합산)
+                    const totalOwned = [...target.foods, ...target.miscs]
+                        .filter(el => el.tag === reqItem.tag)
+                        .reduce((sum, el) => sum + (Number(el.num) || 0), 0);
+
+                    if (totalOwned < reqNum) return false;
+                }
+                continue;
+            }
+
+            // 2. 일반 숫자형 자원 검사 (wood, stone 등)
+            const required = Number(need) || 0;
+            if (required <= 0) continue;
+
+            const current = Number(target[key]) || 0;
+            if (current < required) return false;
+        }
+
+        return true;
+    },
+   /**
+     * 해당 창고(storageID)에 사용 가능한 식량이 n개 이상 있는지 검사합니다.
+     * @param {string} storageID - 대상 창고 ID
+     * @param {number} n - 필요한 최소 총 식량 수량 (기본값: 1)
+     * @param {boolean} excludeSpoiled - 이미 상한 음식(freshDay <= 0) 제외 여부 (기본값: true)
+     * @returns {boolean} 총 식량 수량이 n개 이상이면 true, 부족하면 false
+     */
+    hasAnyFoods(storageID, n = 1, excludeSpoiled = true) {
+        const reqCount = Number(n) || 0;
+        if (reqCount <= 0) return true;
+
+        const target = this.getRes(storageID);
+        if (!target || !Array.isArray(target.foods)) return false;
+
+        let totalAvailable = 0;
+
+        for (const food of target.foods) {
+            const count = Number(food.num) || 0;
+            if (count <= 0) continue;
+            if (excludeSpoiled && (food.freshDay ?? Infinity) <= 0) continue;
+
+            totalAvailable += count;
+
+            // 목표 수량(n)에 도달하면 끝까지 순회하지 않고 즉시 true 반환
+            if (totalAvailable >= reqCount) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
+    /**
+     * 유통기한(freshDay)이 임박한 식량부터 우선 차감합니다.
+     * 보유 총량이 요청 수량(amount)보다 부족하면 차감하지 않고 false를 반환합니다.
+     * @param {string} storageID - 대상 창고 ID
+     * @param {number} amount - 차감할 식량 수량 (기본값: 1)
+     * @param {boolean} excludeSpoiled - 이미 상한 음식(freshDay <= 0) 제외 여부 (기본값: true)
+     * @returns {boolean} 차감 성공 시 true, 식량 부족 시 false
+     */
+    consumeFoods(storageID, amount = 1, excludeSpoiled = true) {
+        const reqAmount = Number(amount) || 0;
+        if (reqAmount <= 0) return true;
+
+        const target = this.getRes(storageID);
+        if (!target || !Array.isArray(target.foods)) return false;
+
+        // 1. 먹을 수 있는 식량 필터링 및 전체 보유 수량 사전 계산
+        const validFoods = target.foods.filter(food => {
+            const count = Number(food.num) || 0;
+            if (count <= 0) return false;
+            if (excludeSpoiled && (food.freshDay ?? Infinity) <= 0) return false;
+            return true;
+        });
+
+        const totalAvailable = validFoods.reduce((sum, food) => sum + (Number(food.num) || 0), 0);
+
+        // 2. 총량이 부족하면 기존 배열을 건드리지 않고 즉시 false 반환
+        if (totalAvailable < reqAmount) {
+            return false;
+        }
+
+        // 3. 유통기한(freshDay) 오름차순 정렬 (가장 빨리 상하는 식량부터 소모)
+        // freshDay가 없는 통조림/건조식품류는 Infinity로 취급해 가장 나중에 소모
+        target.foods.sort((a, b) => (a.freshDay ?? Infinity) - (b.freshDay ?? Infinity));
+
+        // 4. 임박한 순서대로 차감 진행
+        let remainToConsume = reqAmount;
+        for (let i = 0; i < target.foods.length && remainToConsume > 0; i++) {
+            const food = target.foods[i];
+            const count = Number(food.num) || 0;
+            if (count <= 0) continue;
+            if (excludeSpoiled && (food.freshDay ?? Infinity) <= 0) continue;
+
+            const take = Math.min(count, remainToConsume);
+            food.num -= take;
+            remainToConsume -= take;
+        }
+
+        // 5. 수량이 0이 된 빈 식량 스택 정리
+        for (let i = target.foods.length - 1; i >= 0; i--) {
+            if ((Number(target.foods[i].num) || 0) <= 0) {
+                target.foods.splice(i, 1);
+            }
+        }
+
+        return true;
+    },
+
+
+    /**
+     * 자원이 충분한지 검사한 뒤, 모두 충족될 때만 안전하게 일괄 차감합니다.
+     * @param {string} storageID - 대상 창고 ID
+     * @param {Object} costs - 차감할 자원 객체
+     * @returns {boolean} 차감 성공 시 true, 잔량 부족으로 실패 시 false
+     */
+    consumeRes(storageID, costs) {
+        // 1. 사전 전수 검사 (하나라도 부족하면 아무것도 건드리지 않고 즉시 false 반환)
+        if (!this.hasRes(storageID, costs)) {
+            return false;
+        }
+
+        if (!costs) return true;
+        const target = this.getRes(storageID);
+
+        // 2. 검증 완료 후 일괄 차감 실행
+        for (const [key, need] of Object.entries(costs)) {
+            // 배열형 아이템 차감 (freshDay가 낮은 순으로 우선 차감)
+            if (key === 'items' && Array.isArray(need)) {
+                for (const reqItem of need) {
+                    let remainToDeduct = Number(reqItem.num) || 0;
+                    if (remainToDeduct <= 0) continue;
+
+                    // foods 먼저 유통기한 임박순 정렬 후 차감, 부족분은 miscs에서 차감
+                    const deductFromPool = (pool) => {
+                        pool.sort((a, b) => (a.freshDay ?? Infinity) - (b.freshDay ?? Infinity));
+                        for (let i = pool.length - 1; i >= 0; i--) {
+                            if (remainToDeduct <= 0) break;
+                            // 정방향 차감을 위해 인덱스 보정
+                        }
+                        for (let i = 0; i < pool.length && remainToDeduct > 0; i++) {
+                            if (pool[i].tag !== reqItem.tag) continue;
+                            const take = Math.min(pool[i].num, remainToDeduct);
+                            pool[i].num -= take;
+                            remainToDeduct -= take;
+                        }
+                        // 수량이 0이 된 스택 정리
+                        for (let i = pool.length - 1; i >= 0; i--) {
+                            if (pool[i].num <= 0) pool.splice(i, 1);
+                        }
+                    };
+
+                    deductFromPool(target.foods);
+                    if (remainToDeduct > 0) deductFromPool(target.miscs);
+                }
+                continue;
+            }
+
+            // 일반 숫자형 자원 차감
+            const required = Number(need) || 0;
+            if (required > 0) {
+                target[key] = Math.max(0, (target[key] ?? 0) - required);
+            }
+        }
+
+        return true;
+    }
+};
+export function pushItems(array, incoming) {
+    // 배열이 통째로 들어온 경우 재귀 처리
+    if (Array.isArray(incoming)) {
+        incoming.forEach(item => pushItems(array, item));
+        return array;
+    }
+
+    if (!incoming || !incoming.tag) return array;
+
+    // 1. 합칠 수 있는 기존 항목 탐색
+    const existing = array.find(el => {
+        // 기본 조건: tag가 다르면 다른 아이템
+        if (el.tag !== incoming.tag) return false;
+
+        // 특수 조건: 둘 다 'foods' 타입일 경우 freshDay까지 같아야 같은 스택으로 취급
+        if (incoming.type === 'foods' || el.type === 'foods') {
+            return el.freshDay === incoming.freshDay;
+        }
+        // 그 외 일반 아이템은 tag만 같으면 합산 대상
+        return true;
+    });
+
+    // 2. 기존 항목이 있으면 수량 합산, 없으면 복제하여 새로 추가
+    if (existing) {
+        existing.num = (Number(existing.num) || 0) + (Number(incoming.num) || 0);
+    } else {
+        array.push({
+            ...incoming,
+            num: Number(incoming.num) || 0
+        });
+    }
+
+    return array;
 }
 
 
@@ -194,251 +486,8 @@ export function createTileData(key , r, q ){
     
     return data;
 }  
-export function getFacilityData(facilityKey, option={}) {
-    //console.log(GameData.facilities.gasTank.amount); // 500
-    const template = GameData.facilities[facilityKey];
-    if (!template) {
-        console.warn(`[Facility] 존재하지 않는 시설 타입입니다: ${facilityKey}`);
-        return null;
-    }
-    //특정 랜덤값 계산
-    const data = { ...template };
-    //uuid = Phaser.Math.RND.uuid();
-    data.id = 'facility_' + Math.random().toString(36).substring(2, 10);
-    
-    switch(data.type){
-        case 'resource':
-
-            break;
-        
-        case 'house':
-
-            break;
-
-        case 'farm':
-            
-            break;
-
-        case 'facility':
-            
-            break;
-    }
-    switch(data.tag){
-        case 'mouseFarm':
-
-        break;
-
-        default:
-
-        break;
-    }
-    if(data.output!=null){
-        const split = data.output.split(",");
-        let _output = [];
-        for(let i =0 ; i<split.length ;i++){
-            if(split[i].length>0){
-                //ex) mouse:2-8-0.3  => getItem /  Between()
-                const item = split[i].split(':');
-                const num = item[1].split('-');
-                const min = Number(num[0]) ?? 1;  //min 2 ?? 1
-                const max = Number(num[1]) ?? min; //max 8 ?? min
-                const per = num[2] ?? 1 // percentage% or 100%
-                _output.push( {tag:String(item[0]), min:min,max:max, percentage:per });
-            }else{
-
-            }
-        }
-        data.output = _output;
-    }else{
-        data.output = [];
-    }
-
-    if(data.isWorkable){
-        data.maxLaborBackup = Number(data.maxLabor);
-    }
-    
-
-    //option
-    Object.keys(option).forEach((item) => {
-        data[item] = option[item];
-    });
 
 
-    if(data.type=='resource'){
-        //광산 자원 랜덤값
-        data.amount = Phaser.Math.Between( 0, data.maxAmount);
-    }
-
-    return data
-    
-}
-
-/**
- * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수
- * @param {string} facilityKey - 예: 'GasTank', 'JunkMine' 등
- * @returns {Object|null} 독립된 속성을 가진 시설 데이터 객체
- */
-export function createFacilityData(facilityKey, option={}) {
-    //console.log(GameData.facilities.gasTank.amount); // 500
-    const template = GameData.facilities[facilityKey];
-    if (!template) {
-        console.warn(`[Facility] 존재하지 않는 시설 타입입니다: ${facilityKey}`);
-        return null;
-    }
-    //특정 랜덤값 계산
-    const data = { ...template };
-    //uuid = Phaser.Math.RND.uuid();
-    data.id = 'facility_' + Math.random().toString(36).substring(2, 10);
-    //console.log(data.id)
-
-    data.buildTime = 0;
-    if(data.status =='building'){
-        data.amount = data.amount? 0 : null;
-        
-    }
-    if(data.status==null) data.status='';
-    if(data.type =='house'){
-        //집 공간 랜덤값
-        if(data.maxAmount !=null){
-            if(data.amount< data.maxAmount){
-                data.maxAmount = Phaser.Math.Between( data.amount, data.maxAmount);
-            }
-            
-            if(data.maxAmount>0){
-                if(data.amount< data.maxAmount){
-                    data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
-                }else{
-                    data.pop = addMenpower( data.amount);
-                }
-                
-            }else{
-                data.pop = [];
-            }
-            data.amount = data.pop.length;            
-            //console.log(data.pop);
-        }
-    }
-    /*
-    if(data.type=='farm'){
-        data.turnEnd = ()=>{
-           // console.log(`farm ${data.tag} : ` );
-            return data;
-        }
-        
-    }*/
-    if(data.type=='facility' ||data.type=='farm' ){
-        switch( data.tag){
-            case 'radCleaner':
-                data.workList =[{tag:'radCleaning',amount:0, maxAmount:10,min:1,max:1, repeat:-1}]  ;
-                data.work = {... data.workList[0]}
-            break;
-
-            case 'mouseFarm':
-                data.workList =[{tag:'mouse',amount:0, maxAmount:4, min:5,max:8, repeat:-1},
-                                 {tag:'rat',amount:0, maxAmount:5, min:6,max:10, repeat:-1}]  ;
-                data.work = {... data.workList[0]}
-            break;
-            case 'yard':
-                data.workList =[{tag:'wheat',amount:0, maxAmount:70, min:6,max:8, repeat:-1}, 
-                                {tag:'corn',amount:0, maxAmount:55,min:4,max:7, repeat:-1}, 
-                                {tag:'cabbage',amount:0, maxAmount:40,min:7,max:12, repeat:-1}]  ;
-                data.work = {... data.workList[0]}
-            break;
-
-            case 'bucher':
-                data.workList =[{tag:'jerky',amount:0, maxAmount:10,min:5,max:5, repeat:-1}]  ;
-                data.work = {... data.workList[0]}
-
-                
-                const consume_jerky = (tileRes)=>{
-                    const foods = tileRes.foods;
-                    const count = 5;
-                    const array = [];
-                    for(let i =0 ; i< foods.length ; i++){
-                        if(foods[i].subType =='meat' && foods[i].num>=count){
-                            const _item = {...foods[i]};
-                            _item.num = count;
-                            array.push( _item);
-
-                            foods[i].num-= count;
-                            if(foods[i].num==0){
-                                foods.splice(i,1);
-                                i--;
-                            }
-                            //재료소모 및 제작
-                            return array;
-                            
-                        }
-                    }
-                    return null;
-                }
-
-                data.work.consume ={
-                    jerky: consume_jerky,
-                }
-                
-            break;
-
-            default:
-                data.turnEnd = ()=>{
-                    console.log(`facility ${data.tag} : ` );
-                    return data;
-                }
-            break;
-        }
-        
-    }
-    if(data.cost!=null){
-        const cost = data.cost.split(',');
-        let spent ={};
-        for(let i =0 ; i< cost.length ; i++){
-            if(cost[i].length>0){
-                const value = cost[i].split(':');
-                spent[value[0]] = Number(value[1])
-            }
-            
-        }
-        data.cost = spent;
-    }
-    if(data.output!=null){
-        const split = data.output.split(",");
-        let _output = [];
-        for(let i =0 ; i<split.length ;i++){
-            if(split[i].length>0){
-                //ex) mouse:2-8-0.3  => getItem /  Between()
-                const item = split[i].split(':');
-                const num = item[1].split('-');
-                const min = Number(num[0]) ?? 1;  //min 2 ?? 1
-                const max = Number(num[1]) ?? min; //max 8 ?? min
-                const per = num[2] ?? 1 // percentage% or 100%
-                _output.push( {tag:String(item[0]), min:min,max:max, percentage:per });
-            }else{
-
-            }
-        }
-        data.output = _output;
-    }else{
-        data.output = [];
-    }
-
-    if(data.isWorkable){
-        data.maxLaborBackup = Number(data.maxLabor);
-    }
-    
-
-    //option
-    Object.keys(option).forEach((item) => {
-        data[item] = option[item];
-    });
-
-
-    if(data.type=='resource'){
-        //광산 자원 랜덤값
-        data.amount = Phaser.Math.Between( 0, data.maxAmount);
-    }
-
-    return data
-}
 
 export function getItem(tag, num , option={}){
     const template = GameData.items[tag] //{tag:tag, num:num}

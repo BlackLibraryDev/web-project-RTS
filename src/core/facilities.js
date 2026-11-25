@@ -1,4 +1,4 @@
-import { GameData } from "./data.js";
+import { addMenpower, GameData } from "./data.js";
 
 /**
  * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수

@@ -1,4 +1,4 @@
-import { GameData, addMenpower, getItem , res0 } from "./data.js";
+import { GameData, addMenpower, getItem , pushItems, res0, resData } from "./data.js";
 import { processFacilityTurn } from "./facilities.js";
 
 export function objectCopy( object ){
@@ -13,55 +13,16 @@ export function objectCopy( object ){
  * - tag가 같더라도 type이 'foods'이고 freshDay가 다르면 별도 항목으로 추가
  * - 그 외(tag가 같고, foods가 아니거나 freshDay가 같은 경우)에는 num만 합산
  */
-export function pushItems(array, incoming) {
-    // 배열이 통째로 들어온 경우 재귀 처리
-    if (Array.isArray(incoming)) {
-        incoming.forEach(item => pushItems(array, item));
-        return array;
-    }
 
-    if (!incoming || !incoming.tag) return array;
-
-    // 1. 합칠 수 있는 기존 항목 탐색
-    const existing = array.find(el => {
-        // 기본 조건: tag가 다르면 다른 아이템
-        if (el.tag !== incoming.tag) return false;
-
-        // 특수 조건: 둘 다 'foods' 타입일 경우 freshDay까지 같아야 같은 스택으로 취급
-        if (incoming.type === 'foods' || el.type === 'foods') {
-            return el.freshDay === incoming.freshDay;
-        }
-        // 그 외 일반 아이템은 tag만 같으면 합산 대상
-        return true;
-    });
-
-    // 2. 기존 항목이 있으면 수량 합산, 없으면 복제하여 새로 추가
-    if (existing) {
-        existing.num = (Number(existing.num) || 0) + (Number(incoming.num) || 0);
-    } else {
-        array.push({
-            ...incoming,
-            num: Number(incoming.num) || 0
-        });
-    }
-
-    return array;
-}
 
 export function returnMapData(scene){
-    const res=[[],[],[]] ;
-     for(let r = 0; r < scene.mapDatas.length; r++) {
-        for(let q = 0; q < scene.mapDatas[r].length; q++) {
-            const mapdata = scene.mapDatas[r][q];
-           res[mapdata.team].push( mapdata ); 
-        }
-    }
-    return res;
+    const playerRes = resData.getRes( GameData.saveData.storageID);
+
+    return playerRes;
 }
 export function calResourceData(scene, isTurnEnd=false){
     const data = GameData.saveData;
 
-    const res = {};
     
    // processFacilityTurn(facil, teamRes);
 
@@ -72,20 +33,17 @@ export function calResourceData(scene, isTurnEnd=false){
 export function calculateResourceData(scene, isTurnEnd=false){
     //자원 총합 계산
     const data = GameData.saveData;
+    const playerRes = resData.getRes( data.storageID);
 
-  
+    const delta ={...res0};
+    delta.pop = [];
+    delta.foods=[];
+    delta.miscs=[];
 
-    
-    const res = [objectCopy(res0) , objectCopy(res0), objectCopy(res0) ] ;
-    const delta = [
-                    {miscs:[], foods:[], pop:[], food:0, labor:0} ,
-                    {miscs:[], foods:[], pop:[], food:0, labor:0} ,
-                    {miscs:[], foods:[], pop:[], food:0, labor:0} 
-                ] ;
-
-
-    res[1].foods = data.foods;
-    res[1].miscs = data.miscs;
+    //사실 resData의 모든 값을 초기화해야함... 
+    playerRes.house =0;
+    playerRes.labor =0;
+    playerRes.pop = [];
 
     for(let r = 0; r < scene.mapDatas.length; r++) {
         for(let q = 0; q < scene.mapDatas[r].length; q++) {
@@ -99,21 +57,27 @@ export function calculateResourceData(scene, isTurnEnd=false){
             tileRes.labor=0;
             tileRes.house = 0;
             tileRes.pop = [];
+
+            const res = resData.getRes(mapdata.storageID);
+           // resData.house = 0;
+           //resData.labor =0;
+
             for(let i = 0; i < facility.length ; i++){
                 const facil = facility[i];
                 
-                facil.radDebuf = (10-mapdata.rad)/10;
+                facil.radDebuf = (16-mapdata.rad)/16;
 
                 if(facil.type=='house'){
                     //집 계산
-                    res[team].house += facil.maxAmount;
+                    //res[team].house += facil.maxAmount;
+                    res.house+= facil.maxAmount ;
                     for(let n =0 ; n< facil.pop.length ; n++){
                         const person = facil.pop[n];
                         if(person.hunger<0 || person.thirst<0){
                             
                         }else{
                             facil.pop[n].work = '';
-                            delta[team].pop.push(facil.pop[n]);
+                            res.pop.push(facil.pop[n]);
                              workers.push( facil.pop[n]);
 
                              tileRes.labor++;
@@ -123,7 +87,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     }
                     facil.amount = facil.pop.length;
                     tileRes.house += facil.maxAmount;
-                    //delta[team].pop = delta[team].pop.concat( facil.pop );
+                    /////delta[team].pop = delta[team].pop.concat( facil.pop );
                     //console.log(facil.pop)
                 }
             }
@@ -156,78 +120,24 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         if (idleWorker) {
                             idleWorker.work = facil.tag;
                             facil.labor++;
-                            res[team].labor++;
+                            res.labor++;
                             tileRes.labor--;
                             assignedInRound = true; // 이번 바퀴에 최소 1명 배정 성공 -> 다음 바퀴 계속 진행
                         }
                     }
                 }
             }
-             
-            /*
-            
-            for(let i = 0; i < facility.length ; i++){
-                const facil = facility[i];
-                facil.labor = 0;
-
-                if(facil.isWorkable ){
-                    for(let n = 0 ; n< workers.length ; n++){
-                        if(facil.labor< facil.maxLabor){
-                            if(workers[n].work ==''){
-                                workers[n].work = facil.tag;
-                                facil.labor++;
-                                res[team].labor++;
-                                tileRes.labor--;
-                            }
-                        }
-                    }
-                    
-                }
-                
-            }
-            */
 
             
            // if(team==1) console.table(workers)
         }
     }
-    data.house = res[1].house;
-    data.pop = delta[1].pop; //얕은참조
-    data.labor = data.pop.length - res[1].labor;
-     /*
-    for(let r = 0; r < scene.mapDatas.length; r++) {
-        for(let q = 0; q < scene.mapDatas[r].length; q++) {
-            const mapdata = scene.mapDatas[r][q];
-            const facility = mapdata.facility;
-            //const garrison = mapdata.garrison;
-            //const team = mapdata.team;
-            for(let i = 0; i < facility.length ; i++){
-                const facil = facility[i];
-
-                if(facil.type=='resource'){
-                //자원의 경우
-                }
-            }
-            
-        }
-    }*/
-    const consumeFood = (array, amount=1)=>{
-        for(let n = 0; n<array.length ; n++){
-            const item = array[n];
-            
-            if(item.num - amount >= 0) {
-                item.num-= amount;
-                if(item.num<=0){
-                    array.splice(n,1);
-                    n--;
-                }
-                return true;
-                break;
-            }
-            
-        }
-        return false;
-    }
+    
+    playerRes.house //= res[1].house;
+    playerRes.pop   //= delta[1].pop; //얕은참조
+    playerRes.labor =  playerRes.pop.length - playerRes.labor;
+    
+    
     //console.warn( res );
     if(isTurnEnd){
         //턴 종료의 경우
@@ -238,7 +148,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                 const facility = mapdata.facility;
                 //const garrison = mapdata.garrison;
                 const team = mapdata.team;
-                const tileRes = mapdata.res;
+                const tileRes = resData.getRes(mapdata.tileRes );
 
                 for(let i = 0; i < facility.length ; i++){
                     const facil = facility[i];
@@ -259,12 +169,13 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                 const num = Math.ceil(num0*radDebuf);
                                 const item = getItem(d.tag, num);
                             // pushItems(res[team][item.type], item  );
-                                pushItems(delta[team][item.type], item );
+                                if(team ==1) pushItems(delta[item.type], item );
                                 //각 타일에 아이템 넣기...
-                                pushItems( tileRes[item.type], item );
-                                
-                                
-                                
+                               // pushItems( tileRes[item.type], item );
+
+                                resData.addItems( mapdata.storageID, item );
+                                //delta에 넣기
+
                             }
                         }
                     }
@@ -411,6 +322,8 @@ export function calculateResourceData(scene, isTurnEnd=false){
                 //const garrison = mapdata.garrison;
                 const team = mapdata.team;
                 const tileRes = mapdata.res;
+                const res = resData.getRes(mapdata.storageID);
+
                 tileRes.foods.sort( (a,b) => a.freshDay - b.freshDay) ;//신선도 순으로 정렬
 
                 for(let i = 0; i < facility.length ; i++){
@@ -420,18 +333,27 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         facil.pop.sort((a, b) => a.hunger - b.hunger); //배고픔 순으로 정렬
                         for(let n =0 ; n< facil.pop.length ; n++){
                             const person = facil.pop[n];
-                            if(person.hunger>=0){
-                                if(consumeFood( tileRes.foods, 1) && person.hunger< data.foodRestric){
-                                    //음식섭취
-                                    if(person.hunger<5) person.hunger++;
-                                    delta[team].food--;
-                                }else{
-                                    if(team ==1){
-                                        //테스트용, 
-                                         person.hunger--;
+                            if(person.hunger>=0 ){
+                                
+                                if(team ==1 ){
+                                    if( resData.hasAnyFoods(mapdata.storageID, 1) ){
+                                        //
+                                        //음식섭취
+                                        if(person.hunger<5 && person.hunger< data.foodRestric){
+                                            person.hunger++;
+
+                                        }
+                                        
+                                        resData.consumeFoods(mapdata.storageID, 1 );
+                                        
+                                        if(team ==1)  delta.food--;
+                                    }else{
+                                        person.hunger--;
+                                    
                                     }
-                                   
+
                                 }
+                                
                             }
 
                         

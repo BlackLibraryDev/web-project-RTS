@@ -8,7 +8,8 @@ import { getHexLine , axialToPixel } from './hexUtils.js';
 import { findHexPath } from './pathfinding.js';
 import UIScene from './UIscene.js';
 import { GameEvents } from './events.js';
-import { GameData, createFacilityData, addMenpower, getItem, createTileData } from './core/data.js';
+import { GameData,  addMenpower, getItem, createTileData, resData } from './core/data.js';
+import { createFacilityData } from './core/facilities.js';
 import { calculateResourceData } from './core/calculateTurn.js';
 
 export const startX = 200; // 맵 시작 X 오프셋
@@ -75,8 +76,8 @@ export default class metaMap extends Phaser.Scene {
         for(let i = 0; i<this.playerTile.garrison.length ; i++){
             this.playerTile.garrison[i].team = 1;
         }
-        this.playerTile.res.foods.push( getItem('mouse',10),getItem('rat',10))
-        
+        resData.addFoods( GameData.saveData.storageID, [getItem('mouse',10), getItem('rat',5)]);
+        resData.addMiscs( GameData.saveData.storageID, [getItem('misc',100), getItem('scrapIron',50), getItem('wood',50)]);
         this.centerCameraOnTile(this.startingPoint.r, this.startingPoint.q);
         //uiScene.setTileInfo(this.mapDatas[this.startingPoint.r][this.startingPoint.q])
         

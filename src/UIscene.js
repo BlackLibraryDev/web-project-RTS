@@ -1,7 +1,7 @@
 // src/UIscene.js
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
-import { GameData } from './core/data.js';
+import { GameData, resData } from './core/data.js';
 import { createFacilityData } from './core/facilities.js';
 import { calculateResourceData, objectCopy, returnMapData } from './core/calculateTurn.js';
 import { renderSubModal } from './UIinfoModal.js';
@@ -702,34 +702,32 @@ export default class UIScene extends Phaser.Scene {
         }
         
     }
-    renderResourceBar( res =null, turnEnd =false ){
+    renderResourceBar( delta =null, turnEnd =false ){
         const ctn = this.resourceContainer;
         const manpower = {baby:0, child:0, adult:0, house:0 }
         //ctn.manPowerText.setText( `${manpower.adult}/${manpower.house}`);
 
-         const metaMap = this.scene.get('metaMap');
-            const res0 = returnMapData(metaMap);
-            const res1 = res0[1];
-            const count = {fresh:0, perm:0, house:0, labor:0, misc:0}
-           // console.log(res[1])
-            for(let n =0 ; n < res1.length; n++){
-                const tileRes = res1[n].res;
-                count.house+= tileRes.house;
-                count.labor+= tileRes.labor;
-                //console.table(tileRes.foods)
-                for(let i = 0 ; i<tileRes.foods.length ;i++){
-                    const food = tileRes.foods[i];
-                    count[food.fresh]+=food.num;
-                }
-
-                for(let i = 0 ; i<tileRes.miscs.length ;i++){
-                    const item= tileRes.miscs[i];
-                    count.misc +=item.num;
-                }
-            }
+        const data = resData.getRes( GameData.saveData.storageID);
+        const count = {fresh:0, perm:0, house:0, labor:0, misc:0}
+        // console.log(res[1])
+        if(data!=null){
+            count.house = data.house;
+            count.labor = data.pop.length - data.labor;
+            //console.table(tileRes.foods)
+            
+        
            //console.warn(`Total foods: \nfresh: ${count.fresh}/ perm: ${count.perm}`);
+        }
+        for(let i = 0 ; i<data.foods.length ;i++){
+            const food = data.foods[i];
+            count[food.fresh]+=food.num;
+        }
 
-        const data = GameData.saveData;
+        for(let i = 0 ; i<data.miscs.length ;i++){
+            const item= data.miscs[i];
+            count.misc +=item.num;
+        }
+        
         //metaMap.calculateResource(false);
         //인벤토리 구현 및 아이템 sum 후 수치표현
         //console.log(data)
@@ -751,7 +749,7 @@ export default class UIScene extends Phaser.Scene {
         ctn.miscText.setText(`${data.misc}`);
         ctn.fuelText.setText(`${data.fuel}`);
 
-        if(res !=null){
+        if(delta !=null){
             if(turnEnd){
                 this.turn.day++;
                 if(this.turn.day>365) {
@@ -759,33 +757,33 @@ export default class UIScene extends Phaser.Scene {
                     this.turn.year++
                 }
                 //console.log(data)
-                Object.keys(res[1]).forEach((item) => {
+                Object.keys(data).forEach((item) => {
                 //console.log(`${item}:${res[1][item]}`)
                     
-                    if(res[1][item]!=0 && res[1][item].length ==null){
+                    if(delta[item]!=0 && delta[item].length ==null){
                         //배열이 아닌 경우
                         if(ctn[item] !=null){
-                           // data[item] += res[1][item];
-                            this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(res[1][item]>0 ? '+': '' )}${res[1][item]}`); 
+                           // data[item] += delta[item];
+                            this.createFloatingText( ctn[item].x, ctn[item].y+30, '', `${(delta[item]>0 ? '+': '' )}${delta[item]}`); 
                         }
                     
                         if(item =='death'){
                             this.createFloatingText( ctn.manPower.x+40, ctn.manPower.y+30, '', 
-                            `-${res[1][item]}`);
+                            `-${delta[item]}`);
                         }
                     }
-                    if(res[1].foods.length>0){
-                        for(let n =0 ;n < res[1].foods.length; n++){
-                            const item = res[1].foods[n];
+                    if(delta.foods.length>0){
+                        for(let n =0 ;n < delta.foods.length; n++){
+                            const item = delta.foods[n];
                             //data.food += item.num;
                              this.createFloatingText( ctn.food.x, ctn.food.y+60+ n*30,
                                  ``,
                                  `${item.tag} ${(item.num>0 ? '+': '' )}${item.num}`); 
                         }
                     }
-                    if(res[1].miscs.length>0){
-                        for(let n =0 ;n < res[1].miscs.length; n++){
-                            const item = res[1].miscs[n];
+                    if(delta.miscs.length>0){
+                        for(let n =0 ;n < delta.miscs.length; n++){
+                            const item = delta.miscs[n];
                            // data.misc += item.num;
                              this.createFloatingText( ctn.misc.x+30, ctn.misc.y+60 + n*30,
                                  ``,
@@ -832,23 +830,13 @@ export default class UIScene extends Phaser.Scene {
             console.warn(txt);
             console.table(data.pop);
             */
-            const metaMap = this.scene.get('metaMap');
-            const res = returnMapData(metaMap);
-            const res1 = res[1];
+            const res= resData.getRes(GameData.saveData.storageID);
             const count = {house:0, labor:0 }
            // console.log(res[1])
-            for(let n =0 ; n < res1.length; n++){
-                const tileRes = res1[n].res;
-                count.house+= tileRes.house;
-                count.labor+= tileRes.labor;
-                for(let i = 0; i<res1[n].facility.length ; i++){
-                    const facil = res1[n].facility[i];
-                    if(facil.type=='house'){
-                        console.table(facil.pop)
-                    }
-                }
+            if(res!=null){
+               console.table(res.pop)
             }
-            console.warn(`labor:${count.labor}, house: ${count.house}`)
+            console.warn(`labor:${res.labor}, house: ${res.house}`)
             
         })
         
@@ -859,19 +847,15 @@ export default class UIScene extends Phaser.Scene {
         const food = this.makeResourceButton(startX+padding*2,startY,160,50, '🥔',`0/1000`); 
         food.on('pointerdown', ()=>{
 
-            const metaMap = this.scene.get('metaMap');
-            const res = returnMapData(metaMap);
-            const res1 = res[1];
+            const res= resData.getRes(GameData.saveData.storageID);
             const count = {fresh:0, perm:0}
            // console.log(res[1])
-            for(let n =0 ; n < res1.length; n++){
-                console.log( `tile ${res1[n].tag} (${res1[n].r} , ${res1[n].q})` );
-                const tileRes = res1[n].res;
-                console.table(tileRes.foods)
-                for(let i = 0 ; i<tileRes.foods.length ;i++){
-                    const food = tileRes.foods[i];
+            if(res!=null){
+                for(let i = 0 ; i<res.foods.length ;i++){
+                    const food = res.foods[i];
                     count[food.fresh]+=food.num;
                 }
+                console.table(res.foods)
             }
            console.warn(`Total foods: \nfresh: ${count.fresh}/ perm: ${count.perm}`);
         })
@@ -879,18 +863,15 @@ export default class UIScene extends Phaser.Scene {
         const misc = this.makeResourceButton(startX+padding*3,startY,160,50, '⚙️', `0/1000`);
          misc.on('pointerdown', ()=>{
 
-              const metaMap = this.scene.get('metaMap');
-            const res = returnMapData(metaMap);
-            const res1 = res[1];
+            const res= resData.getRes(GameData.saveData.storageID);
             const count = {misc:0}
-             for(let n =0 ; n < res1.length; n++){
-                console.log( `tile ${res1[n].tag} (${res1[n].r} , ${res1[n].q})` );
-                const tileRes = res1[n].res;
-                console.table(tileRes.miscs)
-                for(let i = 0 ; i<tileRes.miscs.length ;i++){
-                    const item = tileRes.miscs[i];
+            if(res!=null){
+                
+                for(let i = 0 ; i<res.miscs.length ;i++){
+                    const item = res.miscs[i];
                     count.misc+=item.num;
                 }
+                console.table(res.miscs)
             }
             console.warn(`Total miscs: ${count.misc}`);
         })
