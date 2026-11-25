@@ -121,7 +121,7 @@ export default class metaMap extends Phaser.Scene {
             this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }else{
             this.playerTile.facility.push( createFacilityData( 'baseCamp') );
-            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:'',amount:0}) );
+            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
         }
         
         for(let i = 0; i<this.playerTile.garrison.length ; i++){

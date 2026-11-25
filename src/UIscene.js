@@ -400,16 +400,29 @@ export default class UIScene extends Phaser.Scene {
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(18);
 
-        let text = `${data.type} ${data.resource? ': '+data.resource :''}`
+        let text = `${data.type} ${data.resource? ': '+data.resource :''}`;
+        if(data.amount){
+            text = `${data.type} ${data.amount}/${data.maxAmount} (${Math.ceil(data.amount/data.maxAmount*100)}%)`;
+        }
+        if(data.work){
+            if(data.work.amount > data.amount){
+                text =`Work: ${data.work.tag} - ${data.work.amount}/${data.work.maxAmount} (${Math.ceil(data.work.amount/data.work.maxAmount*100)}%)`;
+            }else{
+                text = `${data.work.tag} ${data.amount}/${data.maxAmount} (${Math.ceil(data.amount/data.maxAmount*100)}%)`;
+                
+            }
+        }else{
+            
+            
+        }
         const infoTxt = this.add.text(40,25,text, fontStyle).setOrigin(0);
 
         const slotTxt = this.add.text(width-5, 5, data.slot!=null? `slot: ${data.slot}`:'', fontStyle).setOrigin(1,0).setAlign('right').setFontSize(16);
 
         const icon = this.add.image(4,12,'icon').setOrigin(0);
 
-
         let bar = this.add.graphics();
-        let barData = this.renderPercentageBar(bar, data.work??data, 0,height-10, width, 10)
+        let barData = this.renderPercentageBar(bar, data.work? (data.work.amount > data.amount ? data.work : data ) : data , 0,height-10, width, 10)
         bar = barData.bar;
        
 
