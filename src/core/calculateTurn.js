@@ -1,4 +1,5 @@
 import { GameData, addMenpower, getItem , res0 } from "./data.js";
+import { processFacilityTurn } from "./facilities.js";
 
 export function objectCopy( object ){
     // 방법 A: 전개 연산자 (...) 사용
@@ -57,10 +58,22 @@ export function returnMapData(scene){
     }
     return res;
 }
+export function calResourceData(scene, isTurnEnd=false){
+    const data = GameData.saveData;
+
+    const res = {};
+    
+   // processFacilityTurn(facil, teamRes);
+
+    //주석처리
+    return;
+}
 
 export function calculateResourceData(scene, isTurnEnd=false){
     //자원 총합 계산
     const data = GameData.saveData;
+
+  
 
     
     const res = [objectCopy(res0) , objectCopy(res0), objectCopy(res0) ] ;
@@ -96,7 +109,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     res[team].house += facil.maxAmount;
                     for(let n =0 ; n< facil.pop.length ; n++){
                         const person = facil.pop[n];
-                        if(person.hunger<0){
+                        if(person.hunger<0 || person.thirst<0){
                             
                         }else{
                             facil.pop[n].work = '';
@@ -408,7 +421,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
                         for(let n =0 ; n< facil.pop.length ; n++){
                             const person = facil.pop[n];
                             if(person.hunger>=0){
-                                if(consumeFood( tileRes.foods, 1)){
+                                if(consumeFood( tileRes.foods, 1) && person.hunger< data.foodRestric){
                                     //음식섭취
                                     if(person.hunger<5) person.hunger++;
                                     delta[team].food--;

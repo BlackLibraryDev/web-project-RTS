@@ -48,7 +48,10 @@ export const GameData = {
             mapDatas:[],
             ammos:[],
             foods:[],
-            miscs:[]
+            miscs:[],
+            foodRestric:3,
+            waterRestric:3,
+
         }
         
        // returnMenpower( 7 , resetData.pop);
@@ -80,6 +83,7 @@ export function addMenpower(num=1, array = null){
                  type:Phaser.Math.Between(1,2), 
                  hunger: Phaser.Math.Between(2,4), 
                  thirst:4,
+                 happy:0,
                  age:Phaser.Math.Between(18,36),
                  work:''
             } );
@@ -155,10 +159,12 @@ export function createTileData(key , r, q ){
     data.q = q;
     data.explored = GameOptions.config.debugMode;
     data.team = 0;
+    data.storageID = 'storageID_' + Math.random().toString(36).substring(2, 10);
     data.res = objectCopy(res0);
     data.res.foods = [];
     data.res.miscs=[];
     data.res.pop = [];
+
 
     if(key=='vil'){
         if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
@@ -187,7 +193,86 @@ export function createTileData(key , r, q ){
     data.garrison = [];
     
     return data;
-}   
+}  
+export function getFacilityData(facilityKey, option={}) {
+    //console.log(GameData.facilities.gasTank.amount); // 500
+    const template = GameData.facilities[facilityKey];
+    if (!template) {
+        console.warn(`[Facility] 존재하지 않는 시설 타입입니다: ${facilityKey}`);
+        return null;
+    }
+    //특정 랜덤값 계산
+    const data = { ...template };
+    //uuid = Phaser.Math.RND.uuid();
+    data.id = 'facility_' + Math.random().toString(36).substring(2, 10);
+    
+    switch(data.type){
+        case 'resource':
+
+            break;
+        
+        case 'house':
+
+            break;
+
+        case 'farm':
+            
+            break;
+
+        case 'facility':
+            
+            break;
+    }
+    switch(data.tag){
+        case 'mouseFarm':
+
+        break;
+
+        default:
+
+        break;
+    }
+    if(data.output!=null){
+        const split = data.output.split(",");
+        let _output = [];
+        for(let i =0 ; i<split.length ;i++){
+            if(split[i].length>0){
+                //ex) mouse:2-8-0.3  => getItem /  Between()
+                const item = split[i].split(':');
+                const num = item[1].split('-');
+                const min = Number(num[0]) ?? 1;  //min 2 ?? 1
+                const max = Number(num[1]) ?? min; //max 8 ?? min
+                const per = num[2] ?? 1 // percentage% or 100%
+                _output.push( {tag:String(item[0]), min:min,max:max, percentage:per });
+            }else{
+
+            }
+        }
+        data.output = _output;
+    }else{
+        data.output = [];
+    }
+
+    if(data.isWorkable){
+        data.maxLaborBackup = Number(data.maxLabor);
+    }
+    
+
+    //option
+    Object.keys(option).forEach((item) => {
+        data[item] = option[item];
+    });
+
+
+    if(data.type=='resource'){
+        //광산 자원 랜덤값
+        data.amount = Phaser.Math.Between( 0, data.maxAmount);
+    }
+
+    return data
+    
+}
+
 /**
  * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수
  * @param {string} facilityKey - 예: 'GasTank', 'JunkMine' 등

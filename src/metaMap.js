@@ -53,60 +53,7 @@ export default class metaMap extends Phaser.Scene {
         uiScene.seedName = seedName;
 
         this.mapDatas = generateRectangularNoiseMapDatas( 12,10, seedName);
-        /*
-        for(let r = 0; r < this.mapGrid.length; r++) {
-            this.mapDatas[r] = [];
-            for(let q = 0; q < this.mapGrid[r].length; q++) {
-                const terrainId = this.mapGrid[r][q];
-                const terrainType ={ ... Object.values(TERRAIN_TYPES).find(t => t.id === terrainId) || TERRAIN_TYPES.EMPTY };
-                let facilityList = [];
-                let garrisonList = [];
-                let teamNum = 0;
-                let maxNum =terrainType.slot; 
-                const res = this.objectCopy(res0);
-                res.foods =[];
-                res.miscs=[];
-                res.pop = [];
-
-                if(terrainType.name=='redwood' || terrainType.name=='mountain'){
-                   
-                    facilityList.push( createFacilityData('redwood'));
-                }
-
-                if(terrainType.name=='water'){
-                    facilityList.push( createFacilityData('water'))
-                }
-                if(terrainType.name=='field'){
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData('apartment')); 
-                    if(Math.random()< 0.3)  facilityList.push( createFacilityData('boardingHouse')); 
-                    if(Math.random()< 0.4)  facilityList.push( createFacilityData('junkMine'));
-                    
-                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'scout', type:'infantry', amount:1})}
-                    if(Math.random()<0.12) {teamNum=2;  garrisonList.push( {team:2, tag:'anti-drone team', type:'infantry', amount:1})}
-                    if(Math.random()<0.2)  {teamNum=2;  garrisonList.push( {team:2, tag:'rifleman', type:'infantry', amount:1})}
-                }
-
-                
-                //const foods = [getItem('mouse', 20) , getItem('can_tuna', 10) ];
-
-                this.mapDatas[r][q] = { 
-                    id: terrainId , 
-                    type: terrainType , 
-                    tag: terrainType.tag,
-                    name:terrainType.name, 
-                    team:teamNum,
-                    res:res,
-                    q:q, 
-                    r:r,
-                    slot:maxNum,
-                    rad:Phaser.Math.Between(2,4),
-                    explored: GameOptions.config.debugMode, 
-                    facility:facilityList, 
-                    garrison:garrisonList
-                };
-            }
-        }
-        */
+     
         //마을 생성
         this.generateVil(4);
 
@@ -116,12 +63,13 @@ export default class metaMap extends Phaser.Scene {
         this.hexTileFogVisible(this.startingPoint.r, this.startingPoint.q);
         this.playerTile = this.startingPoint.playerTile;
         this.playerTile.team =1; 
+        GameData.saveData.storageID = this.playerTile.storageID;
         if(Object.keys( this.playerTile.facility).find((key) => this.playerTile.facility[key].type === 'house')){
             //console.log('집이 있음')
-            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
+            this.playerTile.facility.push( createFacilityData( 'mouseFarm') );
         }else{
             this.playerTile.facility.push( createFacilityData( 'baseCamp') );
-            this.playerTile.facility.push( createFacilityData( 'mouseFarm', {status:''}) );
+            this.playerTile.facility.push( createFacilityData( 'mouseFarm') );
         }
         
         for(let i = 0; i<this.playerTile.garrison.length ; i++){
@@ -150,7 +98,7 @@ export default class metaMap extends Phaser.Scene {
         const DOUBLE_CLICK_DELAY = 250;
         let dobuleClickedTile = null;
         this.events.on(GameEvents.TILE_CLICKED, (clickedTile) => {
-            uiScene.setTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
+            uiScene.renderTileInfo(this.mapDatas[clickedTile.r][clickedTile.q])
             uiScene.renderResourceBar();
 
             // 1. 이미 진행 중인 더블클릭 타이머가 있다면 -> '두 번째 클릭' (더블탭 성공!)
@@ -203,7 +151,7 @@ export default class metaMap extends Phaser.Scene {
                     // 유닛 이동 실행
                     this.player.moveAlongPath(path, () => {
                     // this.pathVisualizer.showPath(path);
-                        uiScene.setTileInfo(this.mapDatas[this.player.r][this.player.q])
+                        uiScene.renderTileInfo(this.mapDatas[this.player.r][this.player.q])
                         console.log('이동 완료!');
                     });
                 
@@ -291,13 +239,7 @@ export default class metaMap extends Phaser.Scene {
         }
     }
 
-    /**
-     * 자원 총합 계산 및 
-     */
-    calculateResource(isTurnEnd=false){
 
-        return ;
-    }
     ////////////////////////////////////////////////////////////////////////////////////////
     hexTileFogVisible( r, q) {
         //주변도 밝히기

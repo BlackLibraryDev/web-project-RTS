@@ -1,7 +1,8 @@
 // src/UIscene.js
 import { GameEvents } from './events.js';
 import { LanguageData } from './translate.js';
-import { GameData, createFacilityData } from './core/data.js';
+import { GameData } from './core/data.js';
+import { createFacilityData } from './core/facilities.js';
 import { calculateResourceData, objectCopy, returnMapData } from './core/calculateTurn.js';
 import { renderSubModal } from './UIinfoModal.js';
 
@@ -178,10 +179,6 @@ export default class UIScene extends Phaser.Scene {
         this.decisionContainer.add( [overlay,  menuBg , titleTxt, subTxt,  Bt_A, Bt_B, Btconfirm]);
         return this.decisionContainer;
     }
-    //미사용... 
-    makeSubTileInfo(titleText, resourceText, _btUp = null, _btDown= null, _btDel= null){
-       
-    }
 
     make_subTileInfo(){
         //서브 타일 항목
@@ -327,6 +324,8 @@ export default class UIScene extends Phaser.Scene {
         const bar = this.add.graphics();
         const radTxt = this.add.text(startX+20, startY+60, 'Rad: ' , fontStyle).setOrigin(0).setFontSize(18);
 
+        const infoTxt =this.add.text(startX+20, this.scale.height/2-40, `storageID: `, fontStyle).setOrigin(0).setFontSize(18);
+
         const facilityContainer = this.add.container(startX, startY+90);
         const facilityBg = this.add.rectangle(10, 0, 280,380, 0x000000, 0.7).setStrokeStyle(2,0xffffff).setOrigin(0);
         const facilityTxt = this.add.text(20, 10, LanguageData.getText('facility') ,fontStyle).setOrigin(0);
@@ -348,6 +347,7 @@ export default class UIScene extends Phaser.Scene {
             titleText :titleTxt,
             bar:bar,
             radText:radTxt,
+            infoText:infoTxt,
             facilityList: facilityList,
             garrisonList: garrisonList,
             facilityContainer: facilityContainer,
@@ -359,7 +359,7 @@ export default class UIScene extends Phaser.Scene {
             facilityText:facilityTxt,
             garrisonText:garrisonTxt
         }
-        this.tileInfoContainer.add([menuBg,facilityContainer, garrisonContainer,  tileImage,bgGraphics, returnButton,titleTxt, radTxt ]);
+        this.tileInfoContainer.add([menuBg,facilityContainer, garrisonContainer,  tileImage,bgGraphics, returnButton,titleTxt, radTxt,infoTxt ]);
 
         this.tileInfoContainer.setVisible(false);//기본값 안보이게
     }
@@ -396,7 +396,7 @@ export default class UIScene extends Phaser.Scene {
         
         let num = '';
         if(data.isWorkable ) num = `(${data.labor}/${data.maxLabor})`;
-        if(data.type == 'house') num = `(${data.amount}/${data.maxAmount})`;
+        if(data.type == 'house') num = `(house +${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(18);
 
@@ -534,6 +534,7 @@ export default class UIScene extends Phaser.Scene {
                         }
                         
                         tileData.team = 1;
+                        tileData.storageID = GameData.saveData.storageID;
 
                         //자원통합?
                         /*
@@ -660,7 +661,7 @@ export default class UIScene extends Phaser.Scene {
             
         }
     }
-    setTileInfo(tileData){
+    renderTileInfo(tileData){
         if(!this.tileInfoContainer) return
         
         this.tileInfoContainer.setVisible(true);
@@ -683,6 +684,8 @@ export default class UIScene extends Phaser.Scene {
 
             items.titleText.setText( 
                 `${LanguageData.getText( tileData.tag)} (${tileData.q},${tileData.r}) ${tileData.team>0? 'team '+tileData.team :''}` );
+            
+            items.infoText.setText(` ${tileData.storageID}`)
             this.renderTileInfoList( tileData);
             
             let num = 0;

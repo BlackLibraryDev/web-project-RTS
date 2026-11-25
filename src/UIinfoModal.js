@@ -1,4 +1,5 @@
-import { createFacilityData, GameData } from "./core/data.js";
+import {  GameData } from "./core/data.js";
+import { createFacilityData } from './core/facilities.js';
 import { LanguageData } from "./translate.js";
 
 export function renderSubModal(scene, data){
@@ -426,7 +427,7 @@ function renderSubModal_house(scene, container, data){
             items.infoText.setText(`${LanguageData.getText('houseMember')}: ${data.pop.length}\n`);
             for(let n =0 ;n< data.pop.length; n++){
                 const person = data.pop[n];
-                items.infoText.text += `* ${person.tag}(${person.age})  | hungry: ${person.hunger} \n`
+                items.infoText.text += `* ${person.tag}(${person.age}) | [${person.hunger},${person.thirst},${person.happy}]\n`
             }
         }
     }
