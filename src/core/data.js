@@ -80,6 +80,29 @@ export const storageData = {};
 // 창고 데이터 접근 및 조작 유틸리티
 export const resData = {
     // 1. storageID가 없으면 기본 구조 생성 후 반환, 있으면 기존 객체 참조 반환
+    foodSpoiled(){
+        Object.keys(storageData).forEach((storageID) => {
+            const target= resData.getItems(storageID);
+            if(target.foods !=null && Array.isArray(target.foods)){
+                for (let i = target.foods.length - 1; i >= 0; i--) {
+                    if(target.foods[i].freshDay!=null) target.foods[i].freshDay--;
+                    if(target.foods[i].freshDay<0){
+                        target.foods[i].num=0;
+                    }
+                    if ((Number(target.foods[i].num) || 0) <= 0) {
+                        target.foods.splice(i, 1);
+                    }
+                }
+            }
+             if(target.miscs !=null && Array.isArray(target.miscs)){
+                for (let i = target.miscs.length - 1; i >= 0; i--) {
+                    if ((Number(target.miscs[i].num) || 0) <= 0) {
+                        target.miscs.splice(i, 1);
+                    }
+                }
+             }
+        });
+    },
     getRes(storageID) {
         if (!storageID) return null;
 
@@ -182,6 +205,69 @@ export const resData = {
         }
 
         return true;
+    },
+    hasAnyTypes(storageID, subType, n=1){
+        const reqCount = Number(n) || 0;
+        if (reqCount <= 0) return true;
+         const target = this.getRes(storageID);
+        if (!target || !Array.isArray(target.foods)) return false;
+        target.foods.sort((a, b) => (a.freshDay ?? Infinity) - (b.freshDay ?? Infinity));
+        let totalAvailable = 0;
+        for (const food of target.foods) {
+            const count = Number(food.num) || 0;
+            if (count <= 0) continue;
+            if (food.subType != subType) continue;
+            
+            totalAvailable += count;
+
+            // 목표 수량(n)에 도달하면 끝까지 순회하지 않고 즉시 true 반환
+            if (totalAvailable >= reqCount) {
+                return true;
+            }
+        }
+
+    },
+
+    consumeAnyTypes(storageID, subType, n=1){
+        const reqCount = Number(n) || 0;
+        if (reqCount <= 0) return;
+         const target = this.getRes(storageID);
+        if (!target || !Array.isArray(target.foods)) return;
+        target.foods.sort((a, b) => (a.freshDay ?? Infinity) - (b.freshDay ?? Infinity));
+         let totalAvailable = 0;
+         let array = []
+         
+        for (const food of target.foods) {
+            const count = Number(food.num) || 0;
+            if (count <= 0) continue;
+            if (food.subType != subType) continue;
+            totalAvailable += count;
+            // 목표 수량(n)에 도달하면 끝까지 순회하지 않고 즉시 true 반환
+            if (totalAvailable >= reqCount) {
+                totalAvailable = reqCount;
+                break;
+            }
+        }
+        if (totalAvailable >= reqCount) {
+           // console.table( resData.getItems(storageID).foods)
+            //console.log(array, totalAvailable)
+            while(totalAvailable>0){
+                for( const food of target.foods){
+                    if(food.num>0){
+                        food.num--;
+                        totalAvailable--;
+                    }
+                }
+                if(totalAvailable<=0) break;
+            }
+            //console.table( resData.getItems(storageID).foods)
+            for (let i = target.foods.length - 1; i >= 0; i--) {
+                if ((Number(target.foods[i].num) || 0) <= 0) {
+                    target.foods.splice(i, 1);
+                }
+            }
+        }
+        
     },
    /**
      * 해당 창고(storageID)에 사용 가능한 식량이 n개 이상 있는지 검사합니다.

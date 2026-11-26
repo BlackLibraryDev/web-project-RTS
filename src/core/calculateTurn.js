@@ -152,7 +152,7 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                 for(let i = 0; i < facility.length ; i++){
                     const facil = facility[i];
-
+                    /*
                     const pushItem = (facil)=>{
                        
                         for(let f = 0 ; f < facil.output.length ; f++){
@@ -178,79 +178,20 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                             }
                         }
-                    }
-                    let laborToken = true;
-                    if(facil.status == '' && facil.amount==0){
-                        if(facil.work !=null && facil.labor>0){
-                            //작업리스트가 있는 경우
-                            const work = facil.work;
-                            if(work.amount==0 && work.consume !=null){
-                                //재료소모가 있는 경우
-                                const array = work.consume[work.tag](tileRes);
-                                if(array !=null && array.length>0){
-                                
-                                    facil.output = [{tag:work.tag, min:array[0].num, max:array[0].num,percentage:1 } ]
-                                    facil.amount =0;
-                                    facil.maxAmount = array[0].num;
+                    }*/
 
-                                    work.amount++
-                                    laborToken=false;
-                                }
+                    processFacilityTurn(facil, mapdata.storageID );
 
-                            }else{
-
-                                 if(work.amount>= work.maxAmount){
-                                    //
-                                    //console.log(`work complete : ${work.tag}`);
-                                    facil.output = [{tag:work.tag, min:work.min, max:work.max,percentage:1 } ];
-                                    facil.amount= facil.maxAmount;
-
-                                    //pushItem(facil); 
-
-                                    if(work.repeat==0){
-                                        //작업종료
-                                        facil.work = null;
-                                    }else{
-                                        work.amount = 0;
-                                        //-1은 무한반복, 
-                                        if(work.repeat>0) {
-                                            work.repeat--;
-                                        }
-                                        
-                                    }
-                                    
-                                }else{
-                                    work.amount++;
-                                    laborToken=false;
-                                }
-                                
-                                
-                            }
-
-                            
-                           
-                        }
-                        
-                        /*
-                        if(facil.type=='facility'){
-                           // console.log(mapdata)
-                            switch(facil.tag){
-                                case 'radCleaner':
-                                    
-                                break;
-                                default:
-                                    
-                                break;
-                            }
-                        } */
-                    }
-
+                    //console.log(outputs)
                     
-                    if(facil.status=='building'){
+                    let laborToken = true;
+                    
+                    
+                    if(facil.state=='building'){
                         laborToken=false;
                         facil.buildTime += facil.labor;
                         if(facil.buildTime >= facil.maxBuildTime){
-                            facil.status = '';
+                            facil.state = 'active';
                             facil.amount = 0;
                             if(facil.type=='house'){
                                 facil.isWorkable=false;
@@ -260,17 +201,17 @@ export function calculateResourceData(scene, isTurnEnd=false){
 
                     //시설 파괴
                     
-                    if(facil.status =='' && facil.amount<=0){
+                    if(facil.state =='active' && facil.amount<=0){
 
                         if(facil.type =='resource'){
-                            facil.status = 'demolition';
+                            facil.state = 'demolition';
                             //자원 소진 시 삭제하기
                         }
 
                         if(facil.tag == 'radCleaner'){
                             if(mapdata.rad >2){
                                 mapdata.rad--;
-                                facil.status = 'demolition';
+                                facil.state = 'demolition';
                             }
                         }
                         
@@ -278,30 +219,10 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     }
 
 
-                    if(laborToken ){
-                        //식량 추가
-                            
-                        for(let n = 0; n< facil.labor ; n++){
-                            //노동자 수 만큼 자원획득
-                            if(facil.amount>0){
-                                pushItem(facil);     
-                                if(facil.work ==null){
-                                                                    
-                                }else{
-                                        
-                                }
-                                
-                            }else{
-                                
-                            }
-                        }
-                        
-                    }
-
-                    if(facil.status=='demolition'){
+                    if(facil.state=='demolition'){
                         facil.amount -= facil.labor;
                         if(facil.amount <=0){
-                            facil.status = '';
+                            facil.state = 'active';
                             //파괴
                             facility.splice(i,1);
                             i--;
@@ -321,10 +242,10 @@ export function calculateResourceData(scene, isTurnEnd=false){
                 const facility = mapdata.facility;
                 //const garrison = mapdata.garrison;
                 const team = mapdata.team;
-                const tileRes = mapdata.res;
-                const res = resData.getRes(mapdata.storageID);
+                //const tileRes = mapdata.res;
+                //const res = resData.getRes(mapdata.storageID);
 
-                tileRes.foods.sort( (a,b) => a.freshDay - b.freshDay) ;//신선도 순으로 정렬
+                //tileRes.foods.sort( (a,b) => a.freshDay - b.freshDay) ;//신선도 순으로 정렬
 
                 for(let i = 0; i < facility.length ; i++){
                     const facil = facility[i];
@@ -341,12 +262,9 @@ export function calculateResourceData(scene, isTurnEnd=false){
                                         //음식섭취
                                         if(person.hunger<5 && person.hunger< data.foodRestric){
                                             person.hunger++;
-
                                         }
-                                        
                                         resData.consumeFoods(mapdata.storageID, 1 );
-                                        
-                                        if(team ==1)  delta.food--;
+                                        //if(team ==1)  delta.food--;
                                     }else{
                                         person.hunger--;
                                     
@@ -377,18 +295,11 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     }
                 }
                 //아이템 신선도 감소
-                for(let i =0 ;i < tileRes.foods.length ; i++){
-                    const item = tileRes.foods[i];
-                    item.freshDay--;
-                    if(item.freshDay<0){
-                        tileRes.foods.splice(i,1);
-                        i--;
-                    }
-                }
+                
                 
             }
         }
-        
+        resData.foodSpoiled();
     //console.table(res[1].foods);
 
         //턴 종료

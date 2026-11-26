@@ -1,4 +1,4 @@
-import { addMenpower, GameData } from "./data.js";
+import { addMenpower, GameData, getItem, resData } from "./data.js";
 
 /**
  * 지정한 시설 키(Key)의 데이터 복사본 객체를 반환하는 팩토리 함수
@@ -19,11 +19,11 @@ export function createFacilityData(facilityKey, option={}) {
     //console.log(data.id)
 
     data.buildTime = 0;
-    if(data.status =='building'){
+    if(data.state =='building'){
         data.amount = data.amount? 0 : null;
         
     }
-    if(data.status==null) data.status='';
+    if(data.state==null) data.state='active';
     if(data.type =='house'){
         //집 공간 랜덤값
         if(data.maxAmount !=null){
@@ -73,36 +73,8 @@ export function createFacilityData(facilityKey, option={}) {
             break;
 
             case 'bucher':
-                data.workList =[{tag:'jerky',amount:0, maxAmount:10,min:5,max:5, repeat:-1}]  ;
+                data.workList =[{tag:'jerky',amount:0, maxAmount:12, min:10,max:10, repeat:-1}]  ;
                 data.work = {... data.workList[0]}
-
-                
-                const consume_jerky = (tileRes)=>{
-                    const foods = tileRes.foods;
-                    const count = 5;
-                    const array = [];
-                    for(let i =0 ; i< foods.length ; i++){
-                        if(foods[i].subType =='meat' && foods[i].num>=count){
-                            const _item = {...foods[i]};
-                            _item.num = count;
-                            array.push( _item);
-
-                            foods[i].num-= count;
-                            if(foods[i].num==0){
-                                foods.splice(i,1);
-                                i--;
-                            }
-                            //재료소모 및 제작
-                            return array;
-                            
-                        }
-                    }
-                    return null;
-                }
-
-                data.work.consume ={
-                    jerky: consume_jerky,
-                }
                 
             break;
 
@@ -171,65 +143,133 @@ export function createFacilityData(facilityKey, option={}) {
 // ============================================================================
 const FACILITY_HANDLERS = {
     // 1. 주거 시설: 팀의 총 수용 한도 증가
-    house(facil, teamRes) {
+    house(facil, storageID) {
         const capacity = Number(facil.capacity || facil.house) || 0;
-        teamRes.house = (Number(teamRes.house) || 0) + capacity;
+       // storageID.house = (Number(storageID.house) || 0) + capacity;
     },
 
     // 2. 자원 채취 시설: 매 턴 자원 생산
-    resource(facil, teamRes) {
+    resource(facil, storageID) {
+        const res = resData.getRes(storageID);
         const activeLabor = Number(facil.labor) || 0;
         if (activeLabor <= 0 || !facil.resource) return;
 
-        // 예: 배치된 일꾼 1명당 기본 생산량만큼 채취
+        // 예: 배치된 일꾼 1명당 기본 생산량만큼 채취 facil.outputPerLabor = null ? 
         const yieldAmount = (Number(facil.outputPerLabor) || 1) * activeLabor;
+         if(facil.labor>0 ){
+            const outputs = FACILITY_HANDLERS.getOutputs( facil, storageID);
+            return outputs;
 
-        if (Array.isArray(teamRes[facil.resource])) {
-            pushItems(teamRes[facil.resource], getItem(facil.resource, yieldAmount));
-        } else if (typeof teamRes[facil.resource] === 'number') {
-            teamRes[facil.resource] += yieldAmount;
-        }
+         }
     },
 
     // 3. 농장 시설: worklist 진행 후 완료 시 수확물 획득
-    farm(facil, teamRes) {
-        const finishedCrop = advanceWorklist(facil, teamRes, { consumeCost: false });
-        if (!finishedCrop) return;
+    farm(facil, storageID) {
+        if(facil.labor>0 ){
+            FACILITY_HANDLERS.working(facil);
+            const outputs = FACILITY_HANDLERS.getOutputs( facil, storageID);
+            return outputs;
 
-        // 수확물 지급 (예: foods 배열에 신선 식량으로 추가)
-        const cropTag = finishedCrop.outputTag || finishedCrop.tag;
-        const harvestNum = Number(finishedCrop.num) || 1;
-
-        if (cropTag && Array.isArray(teamRes.foods)) {
-            pushItems(teamRes.foods, getItem(cropTag, harvestNum));
-        }
+         }
     },
 
     // 4. 공방/공장 시설: 자원 소모하며 worklist 진행 후 완료 시 결과물 획득
-    facility(facil, teamRes) {
-        const finishedCraft = advanceWorklist(facil, teamRes, { consumeCost: true });
-        if (!finishedCraft || !finishedCraft.output) return;
+    facility(facil, storageID) {
+        
+        if(facil.labor>0){
+            
+            if(facil.amount>0 ){
+                const outputs = FACILITY_HANDLERS.getOutputs( facil, storageID);
+                return outputs;
 
-        const out = { ...finishedCraft.output, num: Number(finishedCraft.output.num) || 1 };
-
-        if (out.type === 'foods' || out.freshDay != null) {
-            pushItems(teamRes.foods, out);
-        } else if (Array.isArray(teamRes.items)) {
-            pushItems(teamRes.items, out);
-        } else if (typeof teamRes[out.tag] === 'number') {
-            teamRes[out.tag] += out.num;
+            }else{
+                if(facil.work !=null){
+                    let action = true;
+                    const handler = FACILITY_HANDLERS[facil.work.tag];
+                    if(handler){
+                        action = handler(facil, storageID);
+                    }
+                    if(action){
+                        FACILITY_HANDLERS.working(facil);
+                    }  
+                }
+            }
         }
+    },
+    jerky(facil, storageID){
+        //data.work = {tag:'jerky',amount:0, maxAmount:10,min:5,max:5, repeat:-1}
+        const res = resData.getRes(storageID);
+        const work = facil.work;
+        
+        if(work.amount==0){
+            //작업 시작 시 자원 검증
+            const bool = resData.hasAnyTypes(storageID, 'meat', facil.work.max);
+            
+            if(bool){
+                facil.maxAmount = facil.work.max;
+                resData.consumeAnyTypes(storageID, 'meat', facil.work.max);
+                return true;
+            }else{
+                //자원이 없는 경우
+                
+                return false;
+            }
+        }
+
+        return true;
+    },
+    working(facil){
+        if(facil.amount>0) return;
+        const work = facil.work;
+
+        if(work!=null ){
+            if(work.amount < work.maxAmount){
+                work.amount++;
+            }else{
+                facil.amount = facil.maxAmount;
+                facil.output = [{tag:work.tag, min:work.min, max:work.max, percentage:1 } ];
+                work.amount =0;
+                if(work.repeat>0) work.repeat--;
+                if(work.repeat==0){
+                    work = null;
+                }
+            }
+            
+        }
+        
+
+    },
+    getOutputs(facil, storageID){
+        const array = [];
+        for(let f = 0 ; f < facil.output.length ; f++){
+            const d = facil.output[f];
+            if(Math.random() <= d.percentage){
+                const radDebuf = d.min==d.max? 1 :  ( facil.radDebuf ?? 1);
+                let num0 = Phaser.Math.Between(d.min, d.max );
+                facil.amount -= num0;
+                if(facil.amount<0){
+                    num0+= facil.amount;
+                    facil.amount = 0;
+                }
+
+                const num = Math.ceil(num0*radDebuf);
+                const item = getItem(d.tag, num);
+                array.push( item );
+                resData.addItems( storageID, item)
+            }
+        }
+        return array;
     }
 };
 
 /**
  * 외부에서 호출하는 단일 진입점 함수
  */
-export function processFacilityTurn(facil, teamRes) {
+export function processFacilityTurn(facil, storageID) {
     if (!facil || facil.state !== 'active') return; // 완공(가동) 상태인 시설만 처리
-
     const handler = FACILITY_HANDLERS[facil.type];
     if (handler) {
-        handler(facil, teamRes);
+       handler(facil, storageID);
     }
+    
 }

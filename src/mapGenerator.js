@@ -61,7 +61,7 @@ export function generateRectangularNoiseMapDatas(width, height, seed = 'default_
 
             actualTerrain.team = 0;
             actualTerrain.slot = 8;
-            actualTerrain.explored = GameOptions.config.debugMode;
+            
             /*
              this.mapDatas[r][q] = { 
                 id: terrainId , 

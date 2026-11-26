@@ -256,8 +256,8 @@ export default class UIScene extends Phaser.Scene {
     }
 
     renderPercentageBar(bar,data, startX, startY, width, height=10){
-        const amount = data.status=='building'? data.buildTime : data.amount;
-        const maxAmount= data.status=='building'? data.maxBuildTime : data.maxAmount;
+        const amount = data.state=='building'? data.buildTime : data.amount;
+        const maxAmount= data.state=='building'? data.maxBuildTime : data.maxAmount;
 
         const percentage = amount / maxAmount ?? 0 // 비율 계산 (0 ~ 1)    
         bar.clear();        
@@ -396,7 +396,7 @@ export default class UIScene extends Phaser.Scene {
         
         let num = '';
         if(data.isWorkable ) num = `(${data.labor}/${data.maxLabor})`;
-        if(data.type == 'house') num = `(house +${data.maxAmount})`;
+        //if(data.type == 'house') num = `(house +${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(18);
 

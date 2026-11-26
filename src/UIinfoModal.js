@@ -140,7 +140,7 @@ export function renderSubModal(scene, data){
         pin:pin
 
     }
-    if(data.status ==''){
+    if(data.state =='active'){
         switch(data.type){
             case 'house':
                  renderSubModal_house(scene, container, data);
@@ -222,7 +222,10 @@ function renderSubModal_facility(scene, container, data){
             const bg = scene.add.rectangle(menuBg.x+10, menuBg.y+10 , 280, 70,0x000000,0.8).setStrokeStyle(2,0xffffff)
              .setInteractive({ useHandCursor: true }).setOrigin(0); 
             bg.on('pointerdown', ()=>{
-                data.work = {... work};
+                if(data.work.tag != work.tag){
+                    data.work = {... work};
+                }
+                
                 func();
                 container2.destroy();
             })
@@ -269,8 +272,8 @@ function renderSubModal_workable(scene, container, data){
    const calculate = ()=>{
         scene.calculateData();
         //res[team][fs.resource] += delta *fs.labor;
-        if(data.status =='building'){
-            items.infoText.setText(`status: ${data.status}`);
+        if(data.state =='building'){
+            items.infoText.setText(`state: ${data.state}`);
         }else{
             //건설완료
             if(data.type=='house'){
@@ -359,18 +362,18 @@ function renderSubModal_add(scene, container, data){
     switch(scene.tileData.tag){
         case 'water':
             addList.push( 
-                createFacilityData('fishBay',{status:'building'}), 
-                createFacilityData('waterPump',{status:'building'})
+                createFacilityData('fishBay',{state:'building'}), 
+                createFacilityData('waterPump',{state:'building'})
             );
             break;
 
         default:
             addList.push(
-                createFacilityData('baseCamp', {amount:0, pop:[],status:'building',isWorkable:true}),
-                createFacilityData('mouseFarm',{status:'building'}),
-                createFacilityData('yard',{status:'building'}), 
-                createFacilityData('radCleaner',{status:'building'}),
-                createFacilityData('bucher',{status:'building'})
+                createFacilityData('baseCamp', {amount:0, pop:[],state:'building',isWorkable:true}),
+                createFacilityData('mouseFarm',{state:'building'}),
+                createFacilityData('yard',{state:'building'}), 
+                createFacilityData('radCleaner',{state:'building'}),
+                createFacilityData('bucher',{state:'building'})
             );
         break
     }
@@ -418,8 +421,8 @@ function renderSubModal_house(scene, container, data){
     items.resourceText.setVisible(true);
 
     const calculate = ()=>{
-        if(data.status =='building'){
-            items.infoText.setText(`status: ${data.status}`);
+        if(data.state =='building'){
+            items.infoText.setText(`state: ${data.state}`);
         }else{
             items.titleText.setText( `${LanguageData.getText(data.tag)} (${data.pop.length}/${data.maxAmount})`)
             items.resourceText.setText( `house upkeep: +${data.amount}`);
@@ -448,8 +451,8 @@ function renderSubModalBar(scene, container, data){
     const items = container.items;
     if(data.amount!=null && data.maxAmount ){
         let tag = data.resource ?? LanguageData.getText('houseMember');
-        if(data.status=='building'){
-            tag = data.status;
+        if(data.state=='building'){
+            tag = data.state;
         }
 
         items.bar.clear();
@@ -466,8 +469,8 @@ function renderSubModalBar(scene, container, data){
 }
 
 function renderPercentageBar(scene,  data, startX, startY, width, height=10){
-    const amount = data.status=='building'? data.buildTime : data.amount;
-    const maxAmount= data.status=='building'? data.maxBuildTime : data.maxAmount;
+    const amount = data.state=='building'? data.buildTime : data.amount;
+    const maxAmount= data.state=='building'? data.maxBuildTime : data.maxAmount;
 
     const percentage = amount / maxAmount ?? 0 // 비율 계산 (0 ~ 1)          
     const bar = scene.add.graphics();
