@@ -1022,16 +1022,26 @@ export default class UIScene extends Phaser.Scene {
     }
     turnEnd(){
         this.registry.events.emit(GameEvents.TURN_END, true);
+        
         this.calculateData();
         this.forceUpdateTileInfo();
         //this.renderSubTileInfo(null,false);
         this.createFloatingText( this.endTurnButton.x, this.endTurnButton.y, '','endTurn');
-        if(this.subTileInfoContainer!=null){
-            if(this.subTileInfoContainer.func!=null) this.subTileInfoContainer.func();
-        }
         for(let i = 0 ; i<this.subTileInfoContainerArray.length ; i++){
             if(this.subTileInfoContainerArray[i].func !=null) this.subTileInfoContainerArray[i].func();
+            if(this.subTileInfoContainerArray[i].rawdata.state=='destroy') {
+                this.subTileInfoContainerArray[i].destroy();
+                this.subTileInfoContainerArray.splice(i,1);
+                i--;
+            }
+            
         }
+        
+        if(this.subTileInfoContainer!=null){
+            if(this.subTileInfoContainer.func!=null) this.subTileInfoContainer.func(); 
+            if(this.subTileInfoContainer.rawdata.state=='destroy') this.subTileInfoContainer.destroy();
+        }
+        
     }
     makeButton(x,y, width,height, text, options={}){
         const container = this.add.container(x,y).setInteractive({ 

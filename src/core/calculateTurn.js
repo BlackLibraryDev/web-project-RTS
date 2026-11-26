@@ -204,14 +204,23 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     if(facil.state =='active' && facil.amount<=0){
 
                         if(facil.type =='resource'){
-                            facil.state = 'demolition';
+                           // facil.state = 'demolition';
                             //자원 소진 시 삭제하기
                         }
 
                         if(facil.tag == 'radCleaner'){
-                            if(mapdata.rad >2){
-                                mapdata.rad--;
-                                facil.state = 'demolition';
+                            if(facil.work.amount >= facil.work.maxAmount){
+                                if(mapdata.rad >3){
+                                    facil.work.amount=0;
+                                }
+                                if(mapdata.rad >2){
+                                    mapdata.rad--;
+                                }else{
+                                    facil.work.amount = facil.work.maxAmount;
+                                    facil.maxLabor = 0;
+                                }
+                                
+                                //facil.state = 'demolition';
                             }
                         }
                         
@@ -222,8 +231,9 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     if(facil.state=='demolition'){
                         facil.amount -= facil.labor;
                         if(facil.amount <=0){
-                            facil.state = 'active';
+                            facil.state = 'destroy';
                             //파괴
+                            
                             facility.splice(i,1);
                             i--;
                         }

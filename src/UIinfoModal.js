@@ -35,6 +35,7 @@ export function renderSubModal(scene, data){
             scene.subTileInfoContainerArray[i].setDepth(9)
          }
          container.setDepth(10)
+         //console.log(scene.subTileInfoContainer)
         isDragging = true;
         dragOffsetX = pointer.x - container.x;
         dragOffsetY = pointer.y - container.y;

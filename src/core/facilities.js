@@ -87,6 +87,9 @@ export function createFacilityData(facilityKey, option={}) {
         }
         
     }
+    if(data.workList!=null){
+        data.workList.push({tag:'demolition', amount:0, maxAmount:4, min:1,max:1,repeat:0});
+    }
     if(data.cost!=null){
         const cost = data.cost.split(',');
         let spent ={};
@@ -165,17 +168,30 @@ const FACILITY_HANDLERS = {
 
     // 3. 농장 시설: worklist 진행 후 완료 시 수확물 획득
     farm(facil, storageID) {
+        if(facil.state !='active') return;
         if(facil.labor>0 ){
-            FACILITY_HANDLERS.working(facil);
-            const outputs = FACILITY_HANDLERS.getOutputs( facil, storageID);
-            return outputs;
+            if(facil.amount>0 ){
+                const outputs = FACILITY_HANDLERS.getOutputs( facil, storageID);
+                return outputs;
 
+            }else{
+                if(facil.work !=null){
+                    let action = true;
+                    const handler = FACILITY_HANDLERS[facil.work.tag];
+                    if(handler){
+                        action = handler(facil, storageID);
+                    }
+                    if(action){
+                        FACILITY_HANDLERS.working(facil);
+                    }  
+                }
+            }
          }
     },
 
     // 4. 공방/공장 시설: 자원 소모하며 worklist 진행 후 완료 시 결과물 획득
     facility(facil, storageID) {
-        
+        if(facil.state !='active') return;
         if(facil.labor>0){
             
             if(facil.amount>0 ){
@@ -198,7 +214,7 @@ const FACILITY_HANDLERS = {
     },
     jerky(facil, storageID){
         //data.work = {tag:'jerky',amount:0, maxAmount:10,min:5,max:5, repeat:-1}
-        const res = resData.getRes(storageID);
+       // const res = resData.getRes(storageID);
         const work = facil.work;
         
         if(work.amount==0){
@@ -216,9 +232,19 @@ const FACILITY_HANDLERS = {
             }
         }
 
-        return true;
+        return true;//
+    },
+    radCleaning(facil){
+        //{tag:'radCleaning',amount:0, maxAmount:10,min:1,max:1, repeat:-1}
+        const work = facil.work;
+        if(work.amount >= work.maxAmount){
+            facil.output = [{tag:'rad', min:8, max:10, percentage:1 } ];
+            return false;
+        }
+        return true; //
     },
     working(facil){
+        if(facil.state !='active') return;
         if(facil.amount>0) return;
         const work = facil.work;
 
@@ -231,7 +257,7 @@ const FACILITY_HANDLERS = {
                 work.amount =0;
                 if(work.repeat>0) work.repeat--;
                 if(work.repeat==0){
-                    work = null;
+                   facil.work = null;
                 }
             }
             
@@ -239,7 +265,17 @@ const FACILITY_HANDLERS = {
         
 
     },
+    demolition(facil){
+        const work = facil.work;
+        if(work.amount >= work.maxAmount){
+            facil.state = 'demolition';
+        }else{
+            work.amount++;
+        }
+    },
     getOutputs(facil, storageID){
+        if(facil.state !='active') return [];
+        if(facil.output==null) return [];
         const array = [];
         for(let f = 0 ; f < facil.output.length ; f++){
             const d = facil.output[f];

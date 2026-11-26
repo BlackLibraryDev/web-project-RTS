@@ -76,7 +76,7 @@ export default class metaMap extends Phaser.Scene {
         for(let i = 0; i<this.playerTile.garrison.length ; i++){
             this.playerTile.garrison[i].team = 1;
         }
-        resData.addFoods( GameData.saveData.storageID, [getItem('mouse',10), getItem('rat',5)]);
+        resData.addFoods( GameData.saveData.storageID, [getItem('mouse',10), getItem('wheat',500)]);
         resData.addMiscs( GameData.saveData.storageID, [getItem('misc',100), getItem('scrapIron',50), getItem('wood',50)]);
         this.centerCameraOnTile(this.startingPoint.r, this.startingPoint.q);
         //uiScene.setTileInfo(this.mapDatas[this.startingPoint.r][this.startingPoint.q])
