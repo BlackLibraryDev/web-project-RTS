@@ -67,8 +67,10 @@ export default class metaMap extends Phaser.Scene {
         GameData.saveData.storageID = this.playerTile.storageID;
         if(Object.keys( this.playerTile.facility).find((key) => this.playerTile.facility[key].type === 'house')){
             //console.log('집이 있음')
+            this.playerTile.pop = addMenpower(5);
             this.playerTile.facility.push( createFacilityData( 'mouseFarm') );
         }else{
+            this.playerTile.pop = addMenpower(5);
             this.playerTile.facility.push( createFacilityData( 'baseCamp') );
             this.playerTile.facility.push( createFacilityData( 'mouseFarm') );
         }

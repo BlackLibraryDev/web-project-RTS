@@ -286,7 +286,7 @@ function renderSubModal_workable(scene, container, data){
             
             //건설완료 조건문 끝
             
-            items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n   (Rad debuff: -${data.radDebuf*100}%)\n`);
+            items.infoText.setText(`Max Labor : ${data.maxLaborBackup}\nEstimate income: \n   (Rad debuff: -${ Math.ceil(data.radDebuf*1000)/10}%)\n`);
             if(data.output!=null){
                 const xp =( data.amount>0 ? (data.labor>0 ? data.labor : 1) : 0 ) * (data.radDebuf ?? 1);
                 for(let i =0 ; i<data.output.length;i++){

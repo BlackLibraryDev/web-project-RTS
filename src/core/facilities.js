@@ -26,6 +26,7 @@ export function createFacilityData(facilityKey, option={}) {
     if(data.state==null) data.state='active';
     if(data.type =='house'){
         //집 공간 랜덤값
+        data.pop = [];
         if(data.maxAmount !=null){
             if(data.amount< data.maxAmount){
                 data.maxAmount = Phaser.Math.Between( data.amount, data.maxAmount);
@@ -33,15 +34,15 @@ export function createFacilityData(facilityKey, option={}) {
             
             if(data.maxAmount>0){
                 if(data.amount< data.maxAmount){
-                    data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
+                   // data.pop = addMenpower( Phaser.Math.Between( 0, data.maxAmount) );
                 }else{
-                    data.pop = addMenpower( data.amount);
+                   // data.pop = addMenpower( data.amount);
                 }
                 
             }else{
-                data.pop = [];
+                //data.pop = [];
             }
-            data.amount = data.pop.length;            
+            //data.amount = data.pop.length;            
             //console.log(data.pop);
         }
     }

@@ -396,7 +396,7 @@ export default class UIScene extends Phaser.Scene {
         
         let num = '';
         if(data.isWorkable ) num = `(${data.labor}/${data.maxLabor})`;
-        //if(data.type == 'house') num = `(house +${data.maxAmount})`;
+        if(data.type == 'house') num = `(+${data.maxAmount})`;
         let name =`${ LanguageData.getText(data.tag)} ${ num }` 
         const nameTxt = this.add.text(40,5, name , fontStyle).setOrigin(0).setFontSize(18);
 
@@ -458,7 +458,7 @@ export default class UIScene extends Phaser.Scene {
         this.clearTileInfoList();
         this.captureButton.setVisible(false);
         const items = this.tileInfoContainer.items;
-
+        //console.log(tileData.pop)
         if(tileData.rad>0){
             items.bar.clear();
             const maxRad = 10;
@@ -710,14 +710,7 @@ export default class UIScene extends Phaser.Scene {
         const data = resData.getRes( GameData.saveData.storageID);
         const count = {fresh:0, perm:0, house:0, labor:0, misc:0}
         // console.log(res[1])
-        if(data!=null){
-            count.house = data.house;
-            count.labor = data.pop.length - data.labor;
-            //console.table(tileRes.foods)
-            
-        
-           //console.warn(`Total foods: \nfresh: ${count.fresh}/ perm: ${count.perm}`);
-        }
+   
         for(let i = 0 ; i<data.foods.length ;i++){
             const food = data.foods[i];
             count[food.fresh]+=food.num;
@@ -728,22 +721,11 @@ export default class UIScene extends Phaser.Scene {
             count.misc +=item.num;
         }
         
-        //metaMap.calculateResource(false);
-        //인벤토리 구현 및 아이템 sum 후 수치표현
-        //console.log(data)
-
-        
-        /*const foodType = {fresh:0, perm:0}
-        for(let n = 0; n<data.foods.length ; n++){
-            const item = data.foods[n];
-            foodType[item.fresh]+= item.num;    
-        }
-        data.food = foodType.fresh + foodType.perm;
-        */
+ 
         data.food = count.fresh+count.perm;
         data.misc = count.misc;
 
-        ctn.manPowerText.setText(`${count.labor}/${data.pop.length} 🏠${count.house}`);
+        ctn.manPowerText.setText(`${data.labor}/${data.maxLabor} 🏠${data.house}`);
         ctn.ammoText.setText(`${data.ammo}`);
         ctn.foodText.setText(`${count.fresh}/${count.perm}`);
         ctn.miscText.setText(`${data.misc}`);
@@ -759,7 +741,7 @@ export default class UIScene extends Phaser.Scene {
                 //console.log(data)
                 Object.keys(data).forEach((item) => {
                 //console.log(`${item}:${res[1][item]}`)
-                    
+                    /*
                     if(delta[item]!=0 && delta[item].length ==null){
                         //배열이 아닌 경우
                         if(ctn[item] !=null){
@@ -790,6 +772,7 @@ export default class UIScene extends Phaser.Scene {
                                  `${item.tag} ${(item.num>0 ? '+': '' )}${item.num}`); 
                         }
                     }
+                        */
                 })
             }
             
@@ -821,22 +804,14 @@ export default class UIScene extends Phaser.Scene {
         const padding = 180;
         const manPower = this.makeResourceButton(startX,startY,160,50, '👤',` 0/0/10`);
         manPower.on('pointerdown', ()=>{
-            /*
-            const data = GameData.saveData;
-            let txt = `house: ${data.house} \npopList: ${data.pop.length}\n`;
-            for(let n = 0; n<data.pop.length ; n++){
-                const person = data.pop[n];
-            }
-            console.warn(txt);
-            console.table(data.pop);
-            */
+
             const res= resData.getRes(GameData.saveData.storageID);
             const count = {house:0, labor:0 }
            // console.log(res[1])
             if(res!=null){
                console.table(res.pop)
             }
-            console.warn(`labor:${res.labor}, house: ${res.house}`)
+            console.warn(`labor:${res.labor}/${res.maxLabor}, house: ${res.house}`)
             
         })
         
@@ -1036,10 +1011,10 @@ export default class UIScene extends Phaser.Scene {
             }
             
         }
-        
+
         if(this.subTileInfoContainer!=null){
             if(this.subTileInfoContainer.func!=null) this.subTileInfoContainer.func(); 
-            if(this.subTileInfoContainer.rawdata.state=='destroy') this.subTileInfoContainer.destroy();
+            if(this.subTileInfoContainer.rawdata?.state=='destroy') this.subTileInfoContainer.destroy();
         }
         
     }

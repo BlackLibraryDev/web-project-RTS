@@ -40,8 +40,10 @@ export const GameData = {
     reset(){
         const resetData = {
             house:0,
-            pop:[], //0 아기 1 남자 2여자 (?)
             labor:0,
+            maxLabor:0,
+            pop:[], //0 아기 1 남자 2여자 (?)
+            
             ammo:100,
             food:120,
             fuel:20,
@@ -81,8 +83,8 @@ export const storageData = {};
 export const resData = {
     // 1. storageID가 없으면 기본 구조 생성 후 반환, 있으면 기존 객체 참조 반환
     foodSpoiled(){
-        Object.keys(storageData).forEach((storageID) => {
-            const target= resData.getItems(storageID);
+        for (const storageID of Object.keys(storageData)) {
+            const target = storageData[storageID];
             if(target.foods !=null && Array.isArray(target.foods)){
                 for (let i = target.foods.length - 1; i >= 0; i--) {
                     if(target.foods[i].freshDay!=null) target.foods[i].freshDay--;
@@ -101,7 +103,20 @@ export const resData = {
                     }
                 }
              }
-        });
+        };
+    },
+    setResValue(tag, value = 0) {
+        if (!tag) return;
+
+        for (const storageID of Object.keys(storageData)) {
+            const target = storageData[storageID];
+            if (!target) continue;
+
+            // foods, miscs 같은 배열 속성을 실수로 덮어쓰는 것 방지
+            if (Array.isArray(target[tag])) continue;
+
+            target[tag] = value;
+        }
     },
     getRes(storageID) {
         if (!storageID) return null;
@@ -463,7 +478,8 @@ export function addMenpower(num=1, array = null){
                  thirst:4,
                  happy:0,
                  age:Phaser.Math.Between(18,36),
-                 work:''
+                 work:'',
+                 house:''
             } );
     }
     return a;
@@ -538,13 +554,11 @@ export function createTileData(key , r, q ){
     data.explored = GameOptions.config.debugMode;
     data.team = 0;
     data.storageID = 'storageID_' + Math.random().toString(36).substring(2, 10);
-    data.res = objectCopy(res0);
-    data.res.foods = [];
-    data.res.miscs=[];
-    data.res.pop = [];
+    data.pop = [];
 
 
     if(key=='vil'){
+        addMenpower(6, data.pop)
         if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
         if(Math.random()< 0.4)  facilityList.push( createFacilityData( 'apartment'))
         if(Math.random()< 0.3)  facilityList.push( createFacilityData( 'boardingHouse'));

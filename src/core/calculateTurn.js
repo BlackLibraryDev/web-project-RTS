@@ -45,60 +45,61 @@ export function calculateResourceData(scene, isTurnEnd=false){
     playerRes.labor =0;
     playerRes.pop = [];
 
+    
+    resData.setResValue('house',0);
+    resData.setResValue('labor',0);
+    resData.setResValue('maxLabor',0);
+    resData.setResValue('pop', []);
+
     for(let r = 0; r < scene.mapDatas.length; r++) {
         for(let q = 0; q < scene.mapDatas[r].length; q++) {
             const mapdata = scene.mapDatas[r][q];
             const facility = mapdata.facility;
             const garrison = mapdata.garrison;
             const team = mapdata.team;
-            const tileRes = mapdata.res;
-
-            const workers = [];
-            tileRes.labor=0;
-            tileRes.house = 0;
-            tileRes.pop = [];
 
             const res = resData.getRes(mapdata.storageID);
-           // resData.house = 0;
-           //resData.labor =0;
-
+             res.labor += mapdata.pop.length;
+            res.maxLabor += mapdata.pop.length;
+           res.pop = [... res.pop , ...mapdata.pop]
             for(let i = 0; i < facility.length ; i++){
                 const facil = facility[i];
                 
-                facil.radDebuf = (16-mapdata.rad)/16;
+                facil.radDebuf = (10-mapdata.rad)/10;
 
                 if(facil.type=='house'){
                     //집 계산
-                    //res[team].house += facil.maxAmount;
-                    res.house+= facil.maxAmount ;
-                    for(let n =0 ; n< facil.pop.length ; n++){
-                        const person = facil.pop[n];
-                        if(person.hunger<0 || person.thirst<0){
+                    //if(facil.amount==0)
+                   // facil.pop = [];
+                    if(mapdata.pop.length>0){
+                        for(const person of mapdata.pop){
+                            if(facil.pop.length < facil.maxAmount && person.house ==''){
+                                person.house = facil.id;
+                                facil.pop.push( person )
+                            }
                             
-                        }else{
-                            facil.pop[n].work = '';
-                            res.pop.push(facil.pop[n]);
-                             workers.push( facil.pop[n]);
-
-                             tileRes.labor++;
-                             tileRes.pop.push( facil.pop[n]);
                         }
-                        
+
                     }
+                    
                     facil.amount = facil.pop.length;
-                    tileRes.house += facil.maxAmount;
-                    /////delta[team].pop = delta[team].pop.concat( facil.pop );
-                    //console.log(facil.pop)
+                    res.house+= facil.maxAmount;
+                    
+                    //res.maxLabor+= facil.maxAmount;
+                    
                 }
+                
             }
             //if(team==1) console.table(workers)
+
+            //노동자 투입
             for (let i = 0; i < facility.length; i++) {
                 const facil = facility[i];
                 if (facil.isWorkable) {
                     facil.labor = 0;
                 }
             }
-            workers.forEach(w => {
+            mapdata.pop.forEach(w => {
                 // 이 타일의 시설에서 일하던 일꾼이라면 상태 초기화 (필요시 조건 추가)
                 w.work = ''; 
             });
@@ -115,13 +116,13 @@ export function calculateResourceData(scene, isTurnEnd=false){
                     // 가동 가능하고 아직 정원(facil.maxLabor)이 차지 않은 시설만 대상
                     if (facil.isWorkable && facil.labor < facil.maxLabor) {
                         // 유휴 일꾼(work === '') 1명 찾기
-                        const idleWorker = workers.find(w => w.work === '');
+                        const idleWorker = mapdata.pop.find(w => w.work === '');
                         
                         if (idleWorker) {
                             idleWorker.work = facil.tag;
                             facil.labor++;
-                            res.labor++;
-                            tileRes.labor--;
+                            res.labor--;
+                            //tileRes.labor--;
                             assignedInRound = true; // 이번 바퀴에 최소 1명 배정 성공 -> 다음 바퀴 계속 진행
                         }
                     }
@@ -132,10 +133,6 @@ export function calculateResourceData(scene, isTurnEnd=false){
            // if(team==1) console.table(workers)
         }
     }
-    
-    playerRes.house //= res[1].house;
-    playerRes.pop   //= delta[1].pop; //얕은참조
-    playerRes.labor =  playerRes.pop.length - playerRes.labor;
     
     
     //console.warn( res );
